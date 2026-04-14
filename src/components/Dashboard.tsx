@@ -4,6 +4,7 @@ import TopStats from './TopStats';
 import Heatmap from './Heatmap';
 import SubjectsList from './SubjectsList';
 import StudyComparison from './StudyComparison';
+import { Pomodoro, ExamCountdown, WeeklyGoal } from './Phase7Widgets';
 
 const Dashboard: React.FC = () => {
   const { data, logout } = useData();
@@ -36,8 +37,18 @@ const Dashboard: React.FC = () => {
       <main className="dashboard-grid">
         <TopStats />
         <Heatmap />
-        <SubjectsList />
-        <StudyComparison />
+        
+        <div style={{ gridColumn: 'span 8', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <SubjectsList />
+          <StudyComparison />
+        </div>
+
+        <div style={{ gridColumn: 'span 4', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <Pomodoro />
+          <ExamCountdown />
+          <WeeklyGoal />
+        </div>
+
       </main>
     </div>
   );
