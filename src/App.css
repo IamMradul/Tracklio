@@ -1,0 +1,81 @@
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0 auto;
+  max-width: 1280px;
+  padding: 0 24px;
+}
+
+/* TOP NAVIGATION */
+.top-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 0;
+  margin-bottom: 24px;
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--text-inverse);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.logo span {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.nav-links {
+  display: flex;
+  gap: 16px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color); /* Light border if background is white? Wait, earlier I set background to white but border-color to dark */
+}
+
+/* Let's refine the nav a bit */
+.nav-pill-group {
+  display: flex;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 4px;
+}
+
+.nav-pill {
+  padding: 8px 24px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #a1a1aa;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.nav-pill.active {
+  background-color: #f4f4f5;
+  color: #18181b;
+}
+
+.profile-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #3f6354; /* Dark greenish from reference */
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* DASHBOARD GRID layout for future phases */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+}
