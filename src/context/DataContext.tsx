@@ -50,6 +50,10 @@ export interface AppData {
 
 type ProgressPayload = Pick<AppData, 'subjects' | 'activityData' | 'reminders' | 'resources' | 'exams' | 'weeklyTargetHours'>;
 
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+);
+
 const defaultData: AppData = {
   isLoggedIn: false,
   user: null,
@@ -109,6 +113,28 @@ const sanitizeProgressPayload = (rawPayload: unknown): Partial<ProgressPayload> 
   };
 };
 
+const normalizeAppData = (rawData: unknown): AppData => {
+  const candidate = isRecord(rawData) ? rawData : {};
+  const user = isRecord(candidate.user)
+    ? {
+      name: typeof candidate.user.name === 'string' ? candidate.user.name : '',
+      avatar: typeof candidate.user.avatar === 'string' ? candidate.user.avatar : '',
+    }
+    : null;
+
+  return {
+    ...defaultData,
+    isLoggedIn: typeof candidate.isLoggedIn === 'boolean' ? candidate.isLoggedIn : defaultData.isLoggedIn,
+    user,
+    subjects: Array.isArray(candidate.subjects) ? candidate.subjects as Subject[] : defaultData.subjects,
+    activityData: isRecord(candidate.activityData) ? candidate.activityData as Record<string, number> : defaultData.activityData,
+    reminders: Array.isArray(candidate.reminders) ? candidate.reminders as Reminder[] : defaultData.reminders,
+    resources: Array.isArray(candidate.resources) ? candidate.resources as ResourceItem[] : defaultData.resources,
+    exams: Array.isArray(candidate.exams) ? candidate.exams as ExamItem[] : defaultData.exams,
+    weeklyTargetHours: typeof candidate.weeklyTargetHours === 'number' ? candidate.weeklyTargetHours : defaultData.weeklyTargetHours,
+  };
+};
+
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
   const isGoogleDirectEnabled = Boolean(googleClientId);
@@ -121,7 +147,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        return normalizeAppData(JSON.parse(saved));
       } catch {
         return defaultData;
       }
@@ -452,7 +478,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const updateData = (newData: Partial<AppData>) => {
-    setData(prev => ({ ...prev, ...newData }));
+    setData(prev => normalizeAppData({ ...prev, ...newData }));
   };
 
   return (
