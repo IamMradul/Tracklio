@@ -5,7 +5,7 @@
 }
 
 .timer-display {
-  font-size: 2.6rem;
+  font-size: 2.75rem;
   font-weight: 700;
   color: #ebf3ff;
   text-align: center;
@@ -33,9 +33,9 @@
   background: rgba(15, 34, 80, 0.8);
   border: 1px solid rgba(127, 151, 232, 0.35);
   color: #ccdcff;
-  padding: 7px 16px;
+  padding: 8px 17px;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -218,8 +218,8 @@
 }
 
 .widget-btn.mini {
-  padding: 5px 9px;
-  font-size: 0.64rem;
+  padding: 6px 10px;
+  font-size: 0.66rem;
 }
 
 .widget-btn.danger {

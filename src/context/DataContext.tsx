@@ -10,9 +10,11 @@ export interface Subject {
   name: string;
   progress: number;
   totalHours: number;
+  targetHours: number;
   status: 'on track' | 'progressing' | 'needs focus';
   color: string;
   studyDates: string[]; // e.g., '2026-04-12'
+  dailyHours: Record<string, number>; // date "YYYY-MM-DD" -> hours for this subject
 }
 
 export interface Reminder {
@@ -145,6 +147,68 @@ const normalizeActivityData = (activityData: unknown, mode: unknown): Record<str
   return Object.fromEntries(normalizedEntries) as Record<string, number>;
 };
 
+const normalizeSubjects = (subjects: unknown): Subject[] => {
+  if (!Array.isArray(subjects)) {
+    return [];
+  }
+
+  const toStatus = (progress: number): Subject['status'] => {
+    if (progress >= 100) return 'on track';
+    if (progress >= 50) return 'progressing';
+    return 'needs focus';
+  };
+
+  return subjects
+    .filter(isRecord)
+    .map((subject, index) => {
+      const id = typeof subject.id === 'string' && subject.id.trim() ? subject.id : crypto.randomUUID();
+      const name = typeof subject.name === 'string' && subject.name.trim() ? subject.name : `Subject ${index + 1}`;
+      const color = typeof subject.color === 'string' && subject.color.trim() ? subject.color : '#5f8dff';
+      const targetHours = typeof subject.targetHours === 'number' && Number.isFinite(subject.targetHours) && subject.targetHours > 0
+        ? Number(subject.targetHours.toFixed(1))
+        : 40;
+
+      const dailyHours = isRecord(subject.dailyHours)
+        ? Object.fromEntries(
+          Object.entries(subject.dailyHours)
+            .filter((entry): entry is [string, number] => typeof entry[1] === 'number' && Number.isFinite(entry[1]) && entry[1] > 0)
+            .map(([dateKey, hours]) => [dateKey, Number(hours.toFixed(1))])
+        ) as Record<string, number>
+        : {};
+
+      const legacyDates = Array.isArray(subject.studyDates)
+        ? subject.studyDates.filter((value): value is string => typeof value === 'string')
+        : [];
+
+      for (const dateKey of legacyDates) {
+        if (!dailyHours[dateKey]) {
+          dailyHours[dateKey] = 1.5;
+        }
+      }
+
+      const totalHoursRaw = Object.values(dailyHours).reduce((sum, hours) => sum + hours, 0);
+      const totalHours = Number(totalHoursRaw.toFixed(1));
+      const progress = Math.min(100, Math.round((totalHours / targetHours) * 100));
+      const status = toStatus(progress);
+      const studyDates = Object.entries(dailyHours)
+        .filter(([, hours]) => hours > 0)
+        .map(([dateKey]) => dateKey)
+        .sort();
+
+      return {
+        id,
+        name,
+        progress,
+        totalHours,
+        targetHours,
+        status,
+        color,
+        studyDates,
+        dailyHours,
+      };
+    });
+};
+
 const normalizeAppData = (rawData: unknown): AppData => {
   const candidate = isRecord(rawData) ? rawData : {};
   const user = isRecord(candidate.user)
@@ -158,7 +222,7 @@ const normalizeAppData = (rawData: unknown): AppData => {
     ...defaultData,
     isLoggedIn: typeof candidate.isLoggedIn === 'boolean' ? candidate.isLoggedIn : defaultData.isLoggedIn,
     user,
-    subjects: Array.isArray(candidate.subjects) ? candidate.subjects as Subject[] : defaultData.subjects,
+    subjects: normalizeSubjects(candidate.subjects),
     activityData: normalizeActivityData(candidate.activityData, candidate.activityDataMode),
     activityDataMode: 'hours',
     reminders: Array.isArray(candidate.reminders) ? candidate.reminders as Reminder[] : defaultData.reminders,
@@ -326,7 +390,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         setData(prev => ({
           ...prev,
-          subjects: remotePayload.subjects ?? prev.subjects,
+          subjects: normalizeSubjects(remotePayload.subjects ?? prev.subjects),
           activityData: normalizeActivityData(
             remotePayload.activityData ?? prev.activityData,
             remotePayload.activityDataMode ?? prev.activityDataMode

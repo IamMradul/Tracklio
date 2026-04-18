@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useData } from '../context/DataContext';
 import type { Subject } from '../context/DataContext';
 import './SubjectsList.css';
@@ -41,67 +41,109 @@ const SubjectsList: React.FC = () => {
   const { data, updateData } = useData();
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
   const [newSubjectName, setNewSubjectName] = useState('');
+  const [newSubjectTargetHours, setNewSubjectTargetHours] = useState('40');
+  const [todayHoursInput, setTodayHoursInput] = useState('');
+
+  const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   const selectedSubject = selectedSubjectId
     ? data.subjects.find(subject => subject.id === selectedSubjectId) ?? null
     : null;
 
-  const recentDays = Array.from({ length: 14 }).map((_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    return date;
-  });
+  useEffect(() => {
+    if (!selectedSubject) {
+      setTodayHoursInput('');
+      return;
+    }
 
-  const toggleStudyDate = (subjectId: string, dateKey: string) => {
+    const current = selectedSubject.dailyHours[todayKey] ?? 0;
+    setTodayHoursInput(current > 0 ? String(current) : '');
+  }, [selectedSubject, todayKey]);
+
+  const deriveSubject = (subject: Subject): Subject => {
+    const targetHours = Number.isFinite(subject.targetHours) && subject.targetHours > 0
+      ? Number(subject.targetHours.toFixed(1))
+      : 40;
+
+    const sanitizedDailyHours = Object.fromEntries(
+      Object.entries(subject.dailyHours)
+        .filter((entry): entry is [string, number] => typeof entry[1] === 'number' && Number.isFinite(entry[1]) && entry[1] > 0)
+        .map(([dateKey, hours]) => [dateKey, Number(hours.toFixed(1))])
+    ) as Record<string, number>;
+
+    const totalHoursRaw = Object.values(sanitizedDailyHours).reduce((sum, hours) => sum + hours, 0);
+    const totalHours = Number(totalHoursRaw.toFixed(1));
+    const progress = Math.min(100, Math.round((totalHours / targetHours) * 100));
+    const status: Subject['status'] = progress >= 100 ? 'on track' : progress >= 50 ? 'progressing' : 'needs focus';
+    const studyDates = Object.keys(sanitizedDailyHours).sort();
+
+    return {
+      ...subject,
+      targetHours,
+      dailyHours: sanitizedDailyHours,
+      totalHours,
+      progress,
+      status,
+      studyDates,
+    };
+  };
+
+  const updateSubject = (subjectId: string, mapper: (subject: Subject) => Subject) => {
     const updatedSubjects = data.subjects.map(subject => {
       if (subject.id !== subjectId) {
         return subject;
       }
 
-      const hasDate = subject.studyDates.includes(dateKey);
-      const studyDates = hasDate
-        ? subject.studyDates.filter(date => date !== dateKey)
-        : [...subject.studyDates, dateKey];
-
-      const boundedCount = studyDates.filter(date => {
-        const dateObj = new Date(date);
-        const diffDays = Math.floor((Date.now() - dateObj.getTime()) / (1000 * 60 * 60 * 24));
-        return diffDays >= 0 && diffDays <= 13;
-      }).length;
-
-      const progress = Math.round((boundedCount / 14) * 100);
-      const totalHours = Number((studyDates.length * 1.5).toFixed(1));
-      const status: Subject['status'] = progress >= 70 ? 'on track' : progress >= 40 ? 'progressing' : 'needs focus';
-
-      return {
-        ...subject,
-        studyDates,
-        progress,
-        totalHours,
-        status,
-      };
+      return deriveSubject(mapper(subject));
     });
 
     updateData({ subjects: updatedSubjects });
   };
 
+  const setTodayHoursForSubject = (subjectId: string) => {
+    const parsed = Number(todayHoursInput);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return;
+    }
+
+    const boundedHours = Number(Math.min(parsed, 24).toFixed(1));
+    updateSubject(subjectId, subject => {
+      const nextDailyHours = { ...subject.dailyHours };
+      if (boundedHours <= 0) {
+        delete nextDailyHours[todayKey];
+      } else {
+        nextDailyHours[todayKey] = boundedHours;
+      }
+
+      return {
+        ...subject,
+        dailyHours: nextDailyHours,
+      };
+    });
+  };
+
   const addSubject = () => {
     const name = newSubjectName.trim();
+    const parsedTarget = Number(newSubjectTargetHours);
+    const targetHours = Number.isFinite(parsedTarget) && parsedTarget > 0 ? Number(parsedTarget.toFixed(1)) : 40;
     if (!name) return;
 
     const palette = ['#5f8dff', '#35d6b5', '#ffba5f', '#ff6c78', '#9f84ff'];
-    const nextSubject: Subject = {
+    const nextSubject = deriveSubject({
       id: crypto.randomUUID(),
       name,
       progress: 0,
       totalHours: 0,
+      targetHours,
       status: 'needs focus',
       color: palette[data.subjects.length % palette.length],
       studyDates: [],
-    };
+      dailyHours: {},
+    });
 
     updateData({ subjects: [...data.subjects, nextSubject] });
     setNewSubjectName('');
+    setNewSubjectTargetHours('40');
   };
 
   const editSubject = (subjectId: string) => {
@@ -110,10 +152,16 @@ const SubjectsList: React.FC = () => {
 
     const nextName = window.prompt('Edit subject name', subject.name)?.trim();
     if (!nextName) return;
+    const nextTargetRaw = window.prompt('Edit target hours', String(subject.targetHours))?.trim();
+    if (!nextTargetRaw) return;
+    const nextTarget = Number(nextTargetRaw);
+    if (!Number.isFinite(nextTarget) || nextTarget <= 0) return;
 
     updateData({
       subjects: data.subjects.map(item => (
-        item.id === subjectId ? { ...item, name: nextName } : item
+        item.id === subjectId
+          ? deriveSubject({ ...item, name: nextName, targetHours: Number(nextTarget.toFixed(1)) })
+          : item
       )),
     });
   };
@@ -137,6 +185,32 @@ const SubjectsList: React.FC = () => {
     updateData({ subjects: nextSubjects });
   };
 
+  const heatmapWeeks = useMemo(() => {
+    if (!selectedSubject) {
+      return [] as Array<Array<{ dateKey: string; hours: number }>>;
+    }
+
+    const days = Array.from({ length: 112 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (111 - i));
+      const dateKey = date.toISOString().slice(0, 10);
+      return {
+        dateKey,
+        hours: selectedSubject.dailyHours[dateKey] ?? 0,
+      };
+    });
+
+    return Array.from({ length: 16 }, (_, weekIndex) => days.slice(weekIndex * 7, weekIndex * 7 + 7));
+  }, [selectedSubject]);
+
+  const hoursBucket = (hours: number) => {
+    if (hours <= 0) return 0;
+    if (hours < 1) return 1;
+    if (hours < 2.5) return 2;
+    if (hours < 4) return 3;
+    return 4;
+  };
+
   return (
     <>
       <div className="card subjects-container">
@@ -148,6 +222,15 @@ const SubjectsList: React.FC = () => {
             placeholder="Add subject..."
             value={newSubjectName}
             onChange={(e) => setNewSubjectName(e.target.value)}
+          />
+          <input
+            type="number"
+            min="1"
+            step="0.5"
+            className="subject-create-target"
+            placeholder="Target hours"
+            value={newSubjectTargetHours}
+            onChange={(e) => setNewSubjectTargetHours(e.target.value)}
           />
           <button className="widget-btn" onClick={addSubject}>Add</button>
         </div>
@@ -166,7 +249,7 @@ const SubjectsList: React.FC = () => {
               />
               <div className="subject-info">
                 <div className="subject-name">{subject.name}</div>
-                <div className="subject-hours">{subject.totalHours}h studied</div>
+                <div className="subject-hours">{subject.totalHours}h / {subject.targetHours}h target</div>
               </div>
               <div className="subject-meta-actions">
                 <div className={`subject-status tag-${subject.status.replace(' ', '-')}`}>
@@ -189,28 +272,56 @@ const SubjectsList: React.FC = () => {
         <div className="modal-overlay" onClick={() => setSelectedSubjectId(null)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{selectedSubject.name} - Study Details</h3>
+              <h3>{selectedSubject.name} - Subject Heatmap</h3>
               <button className="close-btn" onClick={() => setSelectedSubjectId(null)}>×</button>
             </div>
             <div className="modal-body">
-              <p>Check the dates you studied {selectedSubject.name}:</p>
-              <div className="checkbox-grid">
-                {recentDays.map((date, i) => {
-                  const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                  const dateKey = date.toISOString().slice(0, 10);
-                  const isChecked = selectedSubject.studyDates.includes(dateKey);
-                  return (
-                    <label key={i} className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => toggleStudyDate(selectedSubject.id, dateKey)}
-                      />
-                      <span className="custom-checkbox" style={{ '--check-color': selectedSubject.color } as React.CSSProperties}></span>
-                      {dateStr}
-                    </label>
-                  );
-                })}
+              <p>Set today's study hours and review your last 16 weeks for {selectedSubject.name}.</p>
+
+              <div className="subject-log-row">
+                <input
+                  type="number"
+                  min="0"
+                  max="24"
+                  step="0.5"
+                  className="subject-log-input"
+                  placeholder="Hours studied today"
+                  value={todayHoursInput}
+                  onChange={(e) => setTodayHoursInput(e.target.value)}
+                />
+                <button className="widget-btn" onClick={() => setTodayHoursForSubject(selectedSubject.id)}>Save today</button>
+              </div>
+
+              <div className="subject-modal-stats">
+                <span>{selectedSubject.totalHours.toFixed(1)}h done</span>
+                <span>{selectedSubject.targetHours.toFixed(1)}h target</span>
+                <span>{selectedSubject.progress}% complete</span>
+              </div>
+
+              <div className="subject-heatmap-board">
+                <div className="subject-heatmap-grid">
+                  {heatmapWeeks.map((week, weekIndex) => (
+                    <div key={weekIndex} className="subject-heatmap-week">
+                      {week.map(day => (
+                        <div
+                          key={day.dateKey}
+                          className={`subject-heatmap-cell subject-bucket-${hoursBucket(day.hours)}`}
+                          title={`${day.dateKey}: ${day.hours.toFixed(1)}h`}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="subject-heatmap-legend">
+                  <span>Less</span>
+                  <i className="subject-heatmap-cell subject-bucket-0" />
+                  <i className="subject-heatmap-cell subject-bucket-1" />
+                  <i className="subject-heatmap-cell subject-bucket-2" />
+                  <i className="subject-heatmap-cell subject-bucket-3" />
+                  <i className="subject-heatmap-cell subject-bucket-4" />
+                  <span>More</span>
+                </div>
               </div>
             </div>
           </div>
