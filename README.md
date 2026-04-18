@@ -12,6 +12,37 @@ It provides a **GitHub-style heatmap**, **subject-wise progress tracking**, and 
 
 ---
 
+## 🗄️ Supabase Progress Persistence (Tracklio)
+
+Tracklio now supports saving progress to Supabase in addition to local browser storage.
+
+### 1) Create env variables
+
+Copy values from `.env.example` into a local `.env` file:
+
+```env
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+### 2) Create the table in Supabase SQL editor
+
+Run the SQL in `supabase/user_progress.sql`.
+
+### 3) Run the app
+
+```bash
+npm install
+npm run dev
+```
+
+### Behavior
+
+- If Supabase env vars are set, progress is loaded on login and saved automatically on data changes.
+- If Supabase is not configured, Tracklio keeps using localStorage only.
+
+---
+
 ## ✨ Features
 
 ### 📊 Visualization
