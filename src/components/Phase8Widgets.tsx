@@ -24,6 +24,35 @@ export const Resources: React.FC = () => {
     setTag('');
   };
 
+  const editResource = (resourceId: string) => {
+    const resource = data.resources.find(item => item.id === resourceId);
+    if (!resource) return;
+
+    const nextTitle = window.prompt('Edit resource title', resource.title)?.trim();
+    if (!nextTitle) return;
+    const nextTag = window.prompt('Edit resource tag', resource.tag)?.trim();
+
+    updateData({
+      resources: data.resources.map(item => (
+        item.id === resourceId ? { ...item, title: nextTitle, tag: nextTag || item.tag } : item
+      )),
+    });
+  };
+
+  const deleteResource = (resourceId: string) => {
+    updateData({ resources: data.resources.filter(item => item.id !== resourceId) });
+  };
+
+  const moveResource = (resourceId: string, direction: -1 | 1) => {
+    const currentIndex = data.resources.findIndex(item => item.id === resourceId);
+    const nextIndex = currentIndex + direction;
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= data.resources.length) return;
+
+    const nextResources = [...data.resources];
+    [nextResources[currentIndex], nextResources[nextIndex]] = [nextResources[nextIndex], nextResources[currentIndex]];
+    updateData({ resources: nextResources });
+  };
+
   return (
     <div className="card widget-card resources-card">
       <div className="card-title">Quick resources</div>
@@ -33,6 +62,12 @@ export const Resources: React.FC = () => {
             <span className="resource-dot" style={{ backgroundColor: res.color }}></span>
             <span className="resource-title">{res.title}</span>
             <span className="resource-tag">{res.tag}</span>
+            <div className="subject-actions">
+              <button type="button" className="widget-btn mini" onClick={() => moveResource(res.id, -1)}>↑</button>
+              <button type="button" className="widget-btn mini" onClick={() => moveResource(res.id, 1)}>↓</button>
+              <button type="button" className="widget-btn mini" onClick={() => editResource(res.id)}>edit</button>
+              <button type="button" className="widget-btn mini danger" onClick={() => deleteResource(res.id)}>del</button>
+            </div>
           </div>
         ))}
         <div className="add-reminder-row">
@@ -61,10 +96,6 @@ export const Reminders: React.FC = () => {
   const { data, updateData } = useData();
   const [newReminder, setNewReminder] = useState('');
 
-  const dismissReminder = (id: string) => {
-    updateData({ reminders: data.reminders.filter(rem => rem.id !== id) });
-  };
-
   const addReminder = () => {
     const description = newReminder.trim();
     if (!description) return;
@@ -84,6 +115,36 @@ export const Reminders: React.FC = () => {
     setNewReminder('');
   };
 
+  const editReminder = (reminderId: string) => {
+    const reminder = data.reminders.find(item => item.id === reminderId);
+    if (!reminder) return;
+
+    const nextTitle = window.prompt('Edit reminder title', reminder.title)?.trim();
+    if (!nextTitle) return;
+    const nextDescription = window.prompt('Edit reminder description', reminder.description)?.trim();
+    if (!nextDescription) return;
+
+    updateData({
+      reminders: data.reminders.map(item => (
+        item.id === reminderId ? { ...item, title: nextTitle, description: nextDescription } : item
+      )),
+    });
+  };
+
+  const deleteReminder = (reminderId: string) => {
+    updateData({ reminders: data.reminders.filter(item => item.id !== reminderId) });
+  };
+
+  const moveReminder = (reminderId: string, direction: -1 | 1) => {
+    const currentIndex = data.reminders.findIndex(item => item.id === reminderId);
+    const nextIndex = currentIndex + direction;
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= data.reminders.length) return;
+
+    const nextReminders = [...data.reminders];
+    [nextReminders[currentIndex], nextReminders[nextIndex]] = [nextReminders[nextIndex], nextReminders[currentIndex]];
+    updateData({ reminders: nextReminders });
+  };
+
   return (
     <div className="card widget-card reminders-card">
       <div className="card-title">Reminders</div>
@@ -96,7 +157,10 @@ export const Reminders: React.FC = () => {
             </div>
             <div className="reminder-desc">{rem.description}</div>
             <div className="reminder-actions">
-              <button className="widget-btn" onClick={() => dismissReminder(rem.id)}>dismiss</button>
+              <button className="widget-btn mini" onClick={() => moveReminder(rem.id, -1)}>↑</button>
+              <button className="widget-btn mini" onClick={() => moveReminder(rem.id, 1)}>↓</button>
+              <button className="widget-btn mini" onClick={() => editReminder(rem.id)}>edit</button>
+              <button className="widget-btn mini danger" onClick={() => deleteReminder(rem.id)}>del</button>
             </div>
           </div>
         ))}

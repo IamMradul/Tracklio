@@ -162,3 +162,20 @@
 .add-reminder-input::placeholder {
   color: #7f94ca;
 }
+
+.subject-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.widget-btn.mini {
+  padding: 5px 9px;
+  font-size: 0.64rem;
+}
+
+.widget-btn.danger {
+  border-color: rgba(255, 122, 132, 0.45);
+  color: #ffb8c0;
+}

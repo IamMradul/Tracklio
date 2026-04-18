@@ -94,6 +94,32 @@ export const ExamCountdown: React.FC = () => {
     updateData({ exams: data.exams.filter(exam => exam.id !== examId) });
   };
 
+  const editExam = (examId: string) => {
+    const exam = data.exams.find(item => item.id === examId);
+    if (!exam) return;
+
+    const nextTitle = window.prompt('Edit exam title', exam.title)?.trim();
+    if (!nextTitle) return;
+    const nextDate = window.prompt('Edit exam date (YYYY-MM-DD)', exam.date)?.trim();
+    if (!nextDate) return;
+
+    updateData({
+      exams: data.exams.map(item => (
+        item.id === examId ? { ...item, title: nextTitle, date: nextDate } : item
+      )),
+    });
+  };
+
+  const moveExam = (examId: string, direction: -1 | 1) => {
+    const currentIndex = data.exams.findIndex(item => item.id === examId);
+    const nextIndex = currentIndex + direction;
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= data.exams.length) return;
+
+    const nextExams = [...data.exams];
+    [nextExams[currentIndex], nextExams[nextIndex]] = [nextExams[nextIndex], nextExams[currentIndex]];
+    updateData({ exams: nextExams });
+  };
+
   return (
     <div className="card widget-card">
       <div className="card-title">EXAM COUNTDOWN</div>
@@ -110,7 +136,12 @@ export const ExamCountdown: React.FC = () => {
             <div className="exam-progress-bar">
               <div className="exam-progress-fill" style={{ width: `${exam.progress}%`, backgroundColor: exam.color }}></div>
             </div>
-            <button className="widget-btn" onClick={() => removeExam(exam.id)}>x</button>
+            <div className="subject-actions">
+              <button className="widget-btn mini" onClick={() => moveExam(exam.id, -1)}>↑</button>
+              <button className="widget-btn mini" onClick={() => moveExam(exam.id, 1)}>↓</button>
+              <button className="widget-btn mini" onClick={() => editExam(exam.id)}>edit</button>
+              <button className="widget-btn mini danger" onClick={() => removeExam(exam.id)}>del</button>
+            </div>
           </div>
         ))}
       </div>
@@ -169,8 +200,8 @@ export const WeeklyGoal: React.FC = () => {
       </div>
 
       <div className="add-reminder-row" style={{ marginTop: '10px' }}>
-        <button className="widget-btn" onClick={() => adjustTarget(-1)}>-1h</button>
-        <button className="widget-btn" onClick={() => adjustTarget(1)}>+1h</button>
+        <button className="widget-btn mini" onClick={() => adjustTarget(-1)}>-1h</button>
+        <button className="widget-btn mini" onClick={() => adjustTarget(1)}>+1h</button>
       </div>
     </div>
   );

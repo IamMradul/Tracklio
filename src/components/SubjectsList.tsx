@@ -104,6 +104,39 @@ const SubjectsList: React.FC = () => {
     setNewSubjectName('');
   };
 
+  const editSubject = (subjectId: string) => {
+    const subject = data.subjects.find(item => item.id === subjectId);
+    if (!subject) return;
+
+    const nextName = window.prompt('Edit subject name', subject.name)?.trim();
+    if (!nextName) return;
+
+    updateData({
+      subjects: data.subjects.map(item => (
+        item.id === subjectId ? { ...item, name: nextName } : item
+      )),
+    });
+  };
+
+  const deleteSubject = (subjectId: string) => {
+    updateData({
+      subjects: data.subjects.filter(item => item.id !== subjectId),
+    });
+    if (selectedSubjectId === subjectId) {
+      setSelectedSubjectId(null);
+    }
+  };
+
+  const moveSubject = (subjectId: string, direction: -1 | 1) => {
+    const currentIndex = data.subjects.findIndex(item => item.id === subjectId);
+    const nextIndex = currentIndex + direction;
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= data.subjects.length) return;
+
+    const nextSubjects = [...data.subjects];
+    [nextSubjects[currentIndex], nextSubjects[nextIndex]] = [nextSubjects[nextIndex], nextSubjects[currentIndex]];
+    updateData({ subjects: nextSubjects });
+  };
+
   return (
     <>
       <div className="card subjects-container">
@@ -135,8 +168,16 @@ const SubjectsList: React.FC = () => {
                 <div className="subject-name">{subject.name}</div>
                 <div className="subject-hours">{subject.totalHours}h studied</div>
               </div>
-              <div className={`subject-status tag-${subject.status.replace(' ', '-')}`}>
-                {subject.status}
+              <div className="subject-meta-actions">
+                <div className={`subject-status tag-${subject.status.replace(' ', '-')}`}>
+                  {subject.status}
+                </div>
+                <div className="subject-actions">
+                  <button type="button" className="widget-btn mini" onClick={() => moveSubject(subject.id, -1)}>↑</button>
+                  <button type="button" className="widget-btn mini" onClick={() => moveSubject(subject.id, 1)}>↓</button>
+                  <button type="button" className="widget-btn mini" onClick={() => editSubject(subject.id)}>edit</button>
+                  <button type="button" className="widget-btn mini danger" onClick={() => deleteSubject(subject.id)}>del</button>
+                </div>
               </div>
             </div>
           ))}
