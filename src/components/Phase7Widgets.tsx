@@ -146,21 +146,21 @@ export const ExamCountdown: React.FC = () => {
         ))}
       </div>
 
-      <div className="add-reminder-row" style={{ marginTop: '12px' }}>
+      <div className="add-reminder-row exam-add-row" style={{ marginTop: '12px' }}>
         <input
           type="text"
           placeholder="exam title"
-          className="add-reminder-input"
+          className="add-reminder-input exam-add-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
         <input
           type="date"
-          className="add-reminder-input"
+          className="add-reminder-input exam-add-date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
         />
-        <button className="widget-btn" onClick={addExam}>+</button>
+        <button className="widget-btn exam-add-btn" onClick={addExam}>+</button>
       </div>
     </div>
   );

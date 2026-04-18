@@ -11,6 +11,8 @@
 .resource-item {
   display: flex;
   align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   background: rgba(17, 35, 83, 0.72);
   padding: 11px;
   border-radius: 11px;
@@ -29,11 +31,18 @@
   color: #eaf2ff;
   font-size: 0.76rem;
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .resource-tag {
   font-size: 0.66rem;
   color: #91a5da;
+  white-space: nowrap;
+}
+
+.resource-item .subject-actions {
+  margin-left: auto;
 }
 
 .add-resource-btn {
@@ -95,6 +104,14 @@
   font-size: 0.72rem;
   margin-bottom: 10px;
   line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.reminder-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .add-reminder-row {
@@ -298,6 +315,20 @@
   grid-column: span 2;
 }
 
+.selected-hours-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.selected-hours-btn {
+  width: 100%;
+  min-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
 @media (max-width: 1080px) {
   .calendar-card {
     min-height: auto;
@@ -305,6 +336,24 @@
 }
 
 @media (max-width: 640px) {
+  .resource-item .subject-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .resource-tag {
+    white-space: normal;
+  }
+
+  .reminder-actions {
+    justify-content: flex-start;
+  }
+
+  .selected-hours-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .selected-metrics {
     grid-template-columns: 1fr;
   }

@@ -10,9 +10,9 @@ const CircularProgress: React.FC<{ progress: number, color: string, onClick: () 
 
   return (
     <div className="progress-ring-container" onClick={onClick}>
-      <svg height="50" width="50" className="progress-ring">
+      <svg height="50" width="50" className="subject-progress-ring">
         <circle
-          className="progress-ring-circle-bg"
+          className="subject-progress-ring-circle-bg"
           strokeWidth="4"
           fill="transparent"
           r={radius}
@@ -20,7 +20,7 @@ const CircularProgress: React.FC<{ progress: number, color: string, onClick: () 
           cy="25"
         />
         <circle
-          className="progress-ring-circle"
+          className="subject-progress-ring-circle"
           stroke={color}
           strokeWidth="4"
           strokeDasharray={circumference + ' ' + circumference}

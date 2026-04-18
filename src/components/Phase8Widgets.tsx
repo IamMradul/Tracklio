@@ -290,9 +290,9 @@ export const CalendarWidget: React.FC = () => {
           </div>
         </div>
 
-        <div className="add-reminder-row" style={{ marginTop: '10px' }}>
+        <div className="selected-hours-grid" style={{ marginTop: '10px' }}>
           {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(hours => (
-            <button key={hours} className="widget-btn" onClick={() => setSelectedHours(hours)}>{hours}h</button>
+            <button key={hours} className="widget-btn selected-hours-btn" onClick={() => setSelectedHours(hours)}>{hours}h</button>
           ))}
         </div>
       </div>

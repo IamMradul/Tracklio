@@ -74,6 +74,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .exam-days {
@@ -86,12 +88,14 @@
 
 .exam-info {
   flex: 1;
+  min-width: 120px;
 }
 
 .exam-title {
   font-weight: 500;
   color: #eaf2ff;
   font-size: 0.82rem;
+  overflow-wrap: anywhere;
 }
 
 .exam-date {
@@ -101,10 +105,53 @@
 
 .exam-progress-bar {
   width: 54px;
+  min-width: 54px;
   height: 5px;
   background-color: #2a395f;
   border-radius: 5px;
   overflow: hidden;
+}
+
+.exam-add-row {
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.exam-add-title {
+  min-width: 180px;
+}
+
+.exam-add-date {
+  min-width: 170px;
+}
+
+.exam-add-btn {
+  flex: 0 0 auto;
+  min-width: 44px;
+}
+
+@media (max-width: 640px) {
+  .exam-item {
+    align-items: flex-start;
+  }
+
+  .exam-progress-bar {
+    width: 100%;
+    min-width: 0;
+    order: 4;
+  }
+
+  .exam-item .subject-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .exam-add-title,
+  .exam-add-date,
+  .exam-add-btn {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
 }
 
 .exam-progress-fill {
