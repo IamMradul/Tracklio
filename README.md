@@ -16,13 +16,15 @@ It provides a **GitHub-style heatmap**, **subject-wise progress tracking**, and 
 
 Tracklio now supports saving progress to Supabase in addition to local browser storage.
 
-Email login uses Supabase Auth magic links.
+Email login uses Supabase Auth when `VITE_GOOGLE_CLIENT_ID` is not set.
+If `VITE_GOOGLE_CLIENT_ID` is set, Tracklio switches to direct Google OAuth (not Supabase Google provider).
 The login page now includes:
 
 - Sign In (email + password)
 - Sign Up (email + password)
 - Magic Link login
 - Password reset email
+- Google OAuth login (direct from Google)
 
 ### 1) Create env variables
 
@@ -43,7 +45,19 @@ Run the SQL in `supabase/user_progress.sql`.
 - Enable Email provider.
 - Keep "Confirm email" enabled for magic link flow.
 
-### 4) Run the app
+### 4) Enable Direct Google OAuth (Google Cloud Console)
+
+1. Open Google Cloud Console -> APIs & Services -> Credentials.
+2. Create OAuth Client ID of type Web application.
+3. Add your app origins in Google console:
+        - `http://localhost:5173` for local development
+        - your production domain
+4. Copy Google Client ID.
+5. Add `VITE_GOOGLE_CLIENT_ID` in your `.env.local` file.
+
+Note: Direct Google OAuth in this frontend-only setup does not create a Supabase auth session.
+
+### 5) Run the app
 
 ```bash
 npm install

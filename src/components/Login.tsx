@@ -16,6 +16,7 @@ const Login: React.FC = () => {
   const {
     login,
     authMode,
+    signInWithGoogle,
     requestEmailSignIn,
     signInWithPassword,
     signUpWithPassword,
@@ -97,6 +98,13 @@ const Login: React.FC = () => {
     setFeedback(null);
   };
 
+  const handleGoogleSignIn = async () => {
+    setSubmitting(true);
+    const result = await signInWithGoogle();
+    setResult(result.ok, result.message);
+    setSubmitting(false);
+  };
+
   return (
     <div className="login-container">
       <div className="card login-card">
@@ -104,7 +112,20 @@ const Login: React.FC = () => {
           Track<span>lio</span>
         </div>
 
-        {authMode === 'supabase-email' ? (
+        {authMode === 'google-direct' ? (
+          <div className="google-only-panel">
+            <p className="login-helper">Sign in directly with your Google account</p>
+            <button
+              type="button"
+              className="google-auth-btn"
+              disabled={submitting}
+              onClick={handleGoogleSignIn}
+            >
+              Continue with Google
+            </button>
+            {feedback && <p className={`login-feedback ${feedbackTone}`}>{feedback}</p>}
+          </div>
+        ) : authMode === 'supabase-email' ? (
           <>
             <div className="auth-tabs">
               <button

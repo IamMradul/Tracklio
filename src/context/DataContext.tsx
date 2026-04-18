@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import type { ReactNode } from 'react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import type { Session } from '@supabase/supabase-js';
+import { signInWithGoogleDirect } from '../lib/googleAuth';
 
 // --- Types ---
 export interface Subject {
@@ -66,8 +67,9 @@ const defaultData: AppData = {
 
 interface DataContextType {
   data: AppData;
-  authMode: 'supabase-email' | 'local';
+  authMode: 'google-direct' | 'supabase-email' | 'local';
   isAuthLoading: boolean;
+  signInWithGoogle: () => Promise<{ ok: boolean; message: string }>;
   signInWithPassword: (email: string, password: string) => Promise<{ ok: boolean; message: string }>;
   signUpWithPassword: (email: string, password: string) => Promise<{ ok: boolean; message: string }>;
   requestPasswordReset: (email: string) => Promise<{ ok: boolean; message: string }>;
@@ -107,10 +109,13 @@ const sanitizeProgressPayload = (rawPayload: unknown): Partial<ProgressPayload> 
 };
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const authMode: 'supabase-email' | 'local' = isSupabaseConfigured ? 'supabase-email' : 'local';
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+  const authMode: 'google-direct' | 'supabase-email' | 'local' = googleClientId
+    ? 'google-direct'
+    : (isSupabaseConfigured ? 'supabase-email' : 'local');
   const isHydratingFromSupabaseRef = useRef(false);
   const hydratedUserRef = useRef<string | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(isSupabaseConfigured);
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(authMode === 'supabase-email');
 
   const [data, setData] = useState<AppData>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -126,6 +131,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     const supabaseClient = supabase;
+    if (authMode !== 'supabase-email') {
+      setIsAuthLoading(false);
+      return;
+    }
+
     if (!isSupabaseConfigured || !supabaseClient) {
       setIsAuthLoading(false);
       return;
@@ -173,7 +183,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isMounted = false;
       authSubscription.subscription.unsubscribe();
     };
-  }, []);
+  }, [authMode]);
 
   useEffect(() => {
     const supabaseClient = supabase;
@@ -264,10 +274,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const requestEmailSignIn = async (email: string) => {
     const supabaseClient = supabase;
-    if (!isSupabaseConfigured || !supabaseClient) {
+    if (authMode !== 'supabase-email' || !isSupabaseConfigured || !supabaseClient) {
       return {
         ok: false,
-        message: 'Supabase is not configured. Use local login mode.',
+        message: 'Email auth via Supabase is not enabled in current mode.',
       };
     }
 
@@ -291,12 +301,46 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   };
 
-  const signInWithPassword = async (email: string, password: string): Promise<AuthResult> => {
-    const supabaseClient = supabase;
-    if (!isSupabaseConfigured || !supabaseClient) {
+  const signInWithGoogle = async (): Promise<AuthResult> => {
+    if (authMode !== 'google-direct') {
       return {
         ok: false,
-        message: 'Supabase is not configured. Use local login mode.',
+        message: 'Direct Google auth is not enabled in current mode.',
+      };
+    }
+
+    try {
+      const profile = await signInWithGoogleDirect(googleClientId || '');
+      const displaySource = profile.name || profile.email;
+      const initials = displaySource.slice(0, 2).toUpperCase();
+
+      setData(prev => ({
+        ...prev,
+        isLoggedIn: true,
+        user: {
+          name: profile.email,
+          avatar: initials,
+        },
+      }));
+
+      return {
+        ok: true,
+        message: `Signed in as ${profile.email}`,
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message: error instanceof Error ? error.message : 'Google sign-in failed.',
+      };
+    }
+  };
+
+  const signInWithPassword = async (email: string, password: string): Promise<AuthResult> => {
+    const supabaseClient = supabase;
+    if (authMode !== 'supabase-email' || !isSupabaseConfigured || !supabaseClient) {
+      return {
+        ok: false,
+        message: 'Email auth via Supabase is not enabled in current mode.',
       };
     }
 
@@ -320,10 +364,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signUpWithPassword = async (email: string, password: string): Promise<AuthResult> => {
     const supabaseClient = supabase;
-    if (!isSupabaseConfigured || !supabaseClient) {
+    if (authMode !== 'supabase-email' || !isSupabaseConfigured || !supabaseClient) {
       return {
         ok: false,
-        message: 'Supabase is not configured. Use local login mode.',
+        message: 'Email auth via Supabase is not enabled in current mode.',
       };
     }
 
@@ -353,10 +397,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const requestPasswordReset = async (email: string): Promise<AuthResult> => {
     const supabaseClient = supabase;
-    if (!isSupabaseConfigured || !supabaseClient) {
+    if (authMode !== 'supabase-email' || !isSupabaseConfigured || !supabaseClient) {
       return {
         ok: false,
-        message: 'Supabase is not configured. Use local login mode.',
+        message: 'Email auth via Supabase is not enabled in current mode.',
       };
     }
 
@@ -378,7 +422,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const login = (name: string) => {
-    if (isSupabaseConfigured) {
+    if (authMode !== 'local') {
       return;
     }
 
@@ -391,7 +435,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = async () => {
     const supabaseClient = supabase;
-    if (isSupabaseConfigured && supabaseClient) {
+    if (authMode === 'supabase-email' && isSupabaseConfigured && supabaseClient) {
       const { error } = await supabaseClient.auth.signOut();
       if (error) {
         console.error('Supabase sign out error:', error.message);
@@ -415,6 +459,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         data,
         authMode,
         isAuthLoading,
+        signInWithGoogle,
         signInWithPassword,
         signUpWithPassword,
         requestPasswordReset,

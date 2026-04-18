@@ -17,18 +17,18 @@ drop policy if exists "Allow update progress" on public.user_progress;
 create policy "Allow read progress"
 on public.user_progress
 for select
-to authenticated
-using (user_name = auth.email());
+to anon, authenticated
+using (true);
 
 create policy "Allow insert progress"
 on public.user_progress
 for insert
-to authenticated
-with check (user_name = auth.email());
+to anon, authenticated
+with check (true);
 
 create policy "Allow update progress"
 on public.user_progress
 for update
-to authenticated
-using (user_name = auth.email())
-with check (user_name = auth.email());
+to anon, authenticated
+using (true)
+with check (true);
