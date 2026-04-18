@@ -30,8 +30,8 @@ const Dashboard: React.FC = () => {
 
       <main className="dashboard-layout">
         <section className="dashboard-main">
-          <TopStats />
           <Heatmap />
+          <TopStats />
           <div className="dashboard-main-grid">
             <SubjectsList />
             <StudyComparison />

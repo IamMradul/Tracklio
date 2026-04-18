@@ -173,7 +173,7 @@ export const WeeklyGoal: React.FC = () => {
   const current = Array.from({ length: 7 }, (_, idx) => {
     const d = new Date(now);
     d.setDate(now.getDate() - idx);
-    return (data.activityData[toDateKey(d)] ?? 0) * 1.5;
+    return data.activityData[toDateKey(d)] ?? 0;
   }).reduce((sum, hours) => sum + hours, 0);
   const target = data.weeklyTargetHours;
   const percent = (current / target) * 100;

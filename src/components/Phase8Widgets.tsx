@@ -198,31 +198,30 @@ export const CalendarWidget: React.FC = () => {
   const totalCells = prevMonthDays.length + currentMonthDays.length;
   const nextMonthDays = Array.from({ length: (7 - (totalCells % 7 || 7)) % 7 }, (_, i) => i + 1);
 
-  const selectedLevel = data.activityData[selectedDate] ?? 0;
-  const selectedStudyHours = selectedLevel * 1.5;
-  const selectedBreakHours = selectedLevel * 0.3;
+  const selectedStudyHours = data.activityData[selectedDate] ?? 0;
+  const selectedBreakHours = selectedStudyHours * 0.2;
   const focusRatio = selectedStudyHours > 0
     ? Math.round((selectedStudyHours / (selectedStudyHours + selectedBreakHours)) * 100)
     : 0;
 
-  const levelToClass = (level: number) => {
-    if (level >= 4) return 'cal-intense';
-    if (level >= 3) return 'cal-active';
-    if (level >= 2) return 'cal-active';
-    if (level >= 1) return 'cal-active';
+  const hoursToClass = (hours: number) => {
+    if (hours >= 6) return 'cal-intense';
+    if (hours >= 4) return 'cal-active';
+    if (hours >= 2) return 'cal-active';
+    if (hours > 0) return 'cal-active';
     return '';
   };
 
   const dateKeyFor = (day: number) => new Date(baseMonth.getFullYear(), baseMonth.getMonth(), day).toISOString().slice(0, 10);
 
-  const setSelectedLevel = (level: number) => {
+  const setSelectedHours = (hours: number) => {
     const nextActivityData = { ...data.activityData };
-    if (level <= 0) {
+    if (hours <= 0) {
       delete nextActivityData[selectedDate];
     } else {
-      nextActivityData[selectedDate] = level;
+      nextActivityData[selectedDate] = Number(hours.toFixed(1));
     }
-    updateData({ activityData: nextActivityData });
+    updateData({ activityData: nextActivityData, activityDataMode: 'hours' });
   };
 
   return (
@@ -244,8 +243,8 @@ export const CalendarWidget: React.FC = () => {
 
         {currentMonthDays.map(d => {
           const dateKey = dateKeyFor(d);
-          const level = data.activityData[dateKey] ?? 0;
-          let extraClass = `cal-date ${levelToClass(level)}`;
+          const hours = data.activityData[dateKey] ?? 0;
+          let extraClass = `cal-date ${hoursToClass(hours)}`;
           if (selectedDate === dateKey) extraClass += ' cal-selected';
 
           return (
@@ -261,10 +260,10 @@ export const CalendarWidget: React.FC = () => {
       </div>
 
       <div className="calendar-legend">
-        <span><i className="lg-0"></i> 0-1h</span>
-        <span><i className="lg-1"></i> 1-2h</span>
-        <span><i className="lg-2"></i> 2-3h</span>
-        <span><i className="lg-3"></i> 3+h</span>
+        <span><i className="lg-0"></i> 0-2h</span>
+        <span><i className="lg-1"></i> 2-4h</span>
+        <span><i className="lg-2"></i> 4-6h</span>
+        <span><i className="lg-3"></i> 6+h</span>
       </div>
 
       <div className="selected-day-card">
@@ -273,7 +272,7 @@ export const CalendarWidget: React.FC = () => {
             <small>Selected day</small>
             <p>{new Date(selectedDate).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</p>
           </div>
-          <span>{selectedLevel > 0 ? 'Active' : 'Idle'}</span>
+          <span>{selectedStudyHours > 0 ? 'Active' : 'Idle'}</span>
         </div>
 
         <div className="selected-metrics">
@@ -292,8 +291,8 @@ export const CalendarWidget: React.FC = () => {
         </div>
 
         <div className="add-reminder-row" style={{ marginTop: '10px' }}>
-          {[0, 1, 2, 3, 4].map(level => (
-            <button key={level} className="widget-btn" onClick={() => setSelectedLevel(level)}>{level}</button>
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(hours => (
+            <button key={hours} className="widget-btn" onClick={() => setSelectedHours(hours)}>{hours}h</button>
           ))}
         </div>
       </div>

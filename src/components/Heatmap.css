@@ -4,6 +4,57 @@
   gap: 14px;
 }
 
+.heatmap-log-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(128, 152, 234, 0.18);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: rgba(11, 27, 64, 0.62);
+}
+
+.heatmap-log-label {
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #89a0d8;
+  margin-bottom: 4px;
+}
+
+.heatmap-log-value {
+  color: #edf4ff;
+  font-size: 1rem;
+}
+
+.heatmap-log-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.heatmap-hours-input {
+  width: 92px;
+  background: rgba(13, 27, 67, 0.8);
+  border: 1px solid rgba(120, 148, 235, 0.28);
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: #deebff;
+}
+
+.heatmap-hours-input::-webkit-outer-spin-button,
+.heatmap-hours-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.heatmap-hours-input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
 .heatmap-title-row {
   display: flex;
   justify-content: space-between;
@@ -142,5 +193,18 @@
 @media (max-width: 700px) {
   .rhythm-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .heatmap-log-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .heatmap-log-controls {
+    flex-wrap: wrap;
+  }
+
+  .heatmap-hours-input {
+    width: 100%;
   }
 }

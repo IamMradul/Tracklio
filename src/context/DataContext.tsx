@@ -41,14 +41,15 @@ export interface AppData {
   isLoggedIn: boolean;
   user: { name: string; avatar: string } | null;
   subjects: Subject[];
-  activityData: Record<string, number>; // date "YYYY-MM-DD" -> level (1-4)
+  activityData: Record<string, number>; // date "YYYY-MM-DD" -> hours
+  activityDataMode: 'hours';
   reminders: Reminder[];
   resources: ResourceItem[];
   exams: ExamItem[];
   weeklyTargetHours: number;
 }
 
-type ProgressPayload = Pick<AppData, 'subjects' | 'activityData' | 'reminders' | 'resources' | 'exams' | 'weeklyTargetHours'>;
+type ProgressPayload = Pick<AppData, 'subjects' | 'activityData' | 'activityDataMode' | 'reminders' | 'resources' | 'exams' | 'weeklyTargetHours'>;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -59,6 +60,7 @@ const defaultData: AppData = {
   user: null,
   subjects: [],
   activityData: {}, // Heatmap data
+  activityDataMode: 'hours',
   reminders: [],
   resources: [],
   exams: [],
@@ -96,6 +98,7 @@ type GoogleSession = {
 const toProgressPayload = (state: AppData): ProgressPayload => ({
   subjects: state.subjects,
   activityData: state.activityData,
+  activityDataMode: state.activityDataMode,
   reminders: state.reminders,
   resources: state.resources,
   exams: state.exams,
@@ -114,11 +117,32 @@ const sanitizeProgressPayload = (rawPayload: unknown): Partial<ProgressPayload> 
     activityData: payload.activityData && typeof payload.activityData === 'object'
       ? (payload.activityData as Record<string, number>)
       : undefined,
+    activityDataMode: payload.activityDataMode === 'hours' ? 'hours' : undefined,
     reminders: Array.isArray(payload.reminders) ? payload.reminders : undefined,
     resources: Array.isArray(payload.resources) ? payload.resources : undefined,
     exams: Array.isArray(payload.exams) ? payload.exams : undefined,
     weeklyTargetHours: typeof payload.weeklyTargetHours === 'number' ? payload.weeklyTargetHours : undefined,
   };
+};
+
+const normalizeActivityData = (activityData: unknown, mode: unknown): Record<string, number> => {
+  if (!isRecord(activityData)) {
+    return {};
+  }
+
+  const isHoursMode = mode === 'hours';
+  const normalizedEntries = Object.entries(activityData)
+    .filter((entry): entry is [string, number] => typeof entry[1] === 'number' && Number.isFinite(entry[1]))
+    .map(([dateKey, value]) => {
+      if (isHoursMode) {
+        return [dateKey, value] as const;
+      }
+
+      const legacyValue = value >= 0 && value <= 4 && Number.isInteger(value) ? value * 1.5 : value;
+      return [dateKey, legacyValue] as const;
+    });
+
+  return Object.fromEntries(normalizedEntries) as Record<string, number>;
 };
 
 const normalizeAppData = (rawData: unknown): AppData => {
@@ -135,7 +159,8 @@ const normalizeAppData = (rawData: unknown): AppData => {
     isLoggedIn: typeof candidate.isLoggedIn === 'boolean' ? candidate.isLoggedIn : defaultData.isLoggedIn,
     user,
     subjects: Array.isArray(candidate.subjects) ? candidate.subjects as Subject[] : defaultData.subjects,
-    activityData: isRecord(candidate.activityData) ? candidate.activityData as Record<string, number> : defaultData.activityData,
+    activityData: normalizeActivityData(candidate.activityData, candidate.activityDataMode),
+    activityDataMode: 'hours',
     reminders: Array.isArray(candidate.reminders) ? candidate.reminders as Reminder[] : defaultData.reminders,
     resources: Array.isArray(candidate.resources) ? candidate.resources as ResourceItem[] : defaultData.resources,
     exams: Array.isArray(candidate.exams) ? candidate.exams as ExamItem[] : defaultData.exams,
@@ -302,7 +327,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setData(prev => ({
           ...prev,
           subjects: remotePayload.subjects ?? prev.subjects,
-          activityData: remotePayload.activityData ?? prev.activityData,
+          activityData: normalizeActivityData(
+            remotePayload.activityData ?? prev.activityData,
+            remotePayload.activityDataMode ?? prev.activityDataMode
+          ),
+          activityDataMode: 'hours',
           reminders: remotePayload.reminders ?? prev.reminders,
           resources: remotePayload.resources ?? prev.resources,
           exams: remotePayload.exams ?? prev.exams,
@@ -515,7 +544,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setData(prev => ({
       ...prev,
       isLoggedIn: true,
-      user: { name, avatar: name.slice(0, 2).toUpperCase() }
+      user: { name, avatar: name.slice(0, 2).toUpperCase() },
     }));
   };
 

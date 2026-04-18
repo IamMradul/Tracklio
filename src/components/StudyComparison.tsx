@@ -9,8 +9,7 @@ const StudyComparison: React.FC = () => {
   const { data } = useData();
 
   const toDateKey = (date: Date) => date.toISOString().slice(0, 10);
-  const toHours = (level: number) => level * 1.5;
-  const readHours = (date: Date) => toHours(data.activityData[toDateKey(date)] ?? 0);
+  const readHours = (date: Date) => data.activityData[toDateKey(date)] ?? 0;
 
   const dataMap = {
     weekly: (() => {
@@ -21,7 +20,7 @@ const StudyComparison: React.FC = () => {
         return {
           label: d.toLocaleDateString(undefined, { weekday: 'short' }).slice(0, 3),
           value: readHours(d),
-          max: 6,
+          max: 10,
         };
       });
     })(),
@@ -43,7 +42,7 @@ const StudyComparison: React.FC = () => {
         return {
           label: `W${idx + 1}`,
           value: total,
-          max: 42,
+          max: 70,
         };
       });
     })(),
@@ -65,7 +64,7 @@ const StudyComparison: React.FC = () => {
         return {
           label: `Q${quarterIdx + 1}`,
           value: total,
-          max: Math.max(60, total || 60),
+          max: Math.max(140, total || 140),
         };
       });
     })()

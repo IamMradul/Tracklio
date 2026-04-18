@@ -3,14 +3,12 @@ import { useData } from '../context/DataContext';
 import './TopStats.css';
 
 const toDateKey = (date: Date) => date.toISOString().slice(0, 10);
-const toHours = (level: number) => level * 1.5;
 
 const TopStats: React.FC = () => {
   const { data } = useData();
   const now = new Date();
   const todayKey = toDateKey(now);
-  const todayLevel = data.activityData[todayKey] ?? 0;
-  const todayHours = toHours(todayLevel);
+  const todayHours = data.activityData[todayKey] ?? 0;
 
   const last7 = Array.from({ length: 7 }, (_, idx) => {
     const d = new Date(now);
@@ -18,11 +16,9 @@ const TopStats: React.FC = () => {
     return data.activityData[toDateKey(d)] ?? 0;
   });
 
-  const weeklyHours = last7.reduce((sum, lvl) => sum + toHours(lvl), 0);
-  const activeDays = last7.filter(lvl => lvl > 0).length;
+  const weeklyHours = last7.reduce((sum, hours) => sum + hours, 0);
+  const activeDays = last7.filter(hours => hours > 0).length;
   const focusScore = Math.min(100, Math.round((weeklyHours / Math.max(1, data.weeklyTargetHours)) * 100));
-  const sessionsDone = last7.reduce((sum, lvl) => sum + lvl, 0);
-  const sessionsTarget = 7 * 4;
   const streak = (() => {
     let count = 0;
     const cursor = new Date(now);
@@ -74,9 +70,9 @@ const TopStats: React.FC = () => {
             <small>from activity logs</small>
           </article>
           <article className="mini-stat-card">
-            <span>Sessions done</span>
-            <strong>{sessionsDone} of {sessionsTarget}</strong>
-            <small>{Math.max(0, sessionsTarget - sessionsDone)} left</small>
+            <span>Hours logged</span>
+            <strong>{weeklyHours.toFixed(1)}h</strong>
+            <small>weekly total</small>
           </article>
           <article className="mini-stat-card wide">
             <span>This week</span>
