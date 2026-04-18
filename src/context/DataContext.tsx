@@ -85,6 +85,14 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 const STORAGE_KEY = 'tracklio_data';
 type AuthResult = { ok: boolean; message: string };
 
+const GOOGLE_SESSION_KEY = 'tracklio_google_session';
+
+type GoogleSession = {
+  email: string;
+  name: string;
+  avatar: string;
+};
+
 const toProgressPayload = (state: AppData): ProgressPayload => ({
   subjects: state.subjects,
   activityData: state.activityData,
@@ -135,6 +143,36 @@ const normalizeAppData = (rawData: unknown): AppData => {
   };
 };
 
+const readGoogleSession = (): GoogleSession | null => {
+  const rawSession = localStorage.getItem(GOOGLE_SESSION_KEY);
+  if (!rawSession) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(rawSession) as Partial<GoogleSession>;
+    if (typeof parsed.email !== 'string' || typeof parsed.name !== 'string' || typeof parsed.avatar !== 'string') {
+      return null;
+    }
+
+    return {
+      email: parsed.email,
+      name: parsed.name,
+      avatar: parsed.avatar,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const saveGoogleSession = (session: GoogleSession) => {
+  localStorage.setItem(GOOGLE_SESSION_KEY, JSON.stringify(session));
+};
+
+const clearGoogleSession = () => {
+  localStorage.removeItem(GOOGLE_SESSION_KEY);
+};
+
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
   const isGoogleDirectEnabled = Boolean(googleClientId);
@@ -180,6 +218,20 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           },
         }));
       } else {
+        const savedGoogleSession = readGoogleSession();
+
+        if (savedGoogleSession) {
+          setData(prev => ({
+            ...prev,
+            isLoggedIn: true,
+            user: {
+              name: savedGoogleSession.name,
+              avatar: savedGoogleSession.avatar,
+            },
+          }));
+          return;
+        }
+
         setData(prev => ({
           ...prev,
           isLoggedIn: false,
@@ -342,11 +394,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const displaySource = profile.name || profile.email;
       const initials = displaySource.slice(0, 2).toUpperCase();
 
+      saveGoogleSession({
+        email: profile.email,
+        name: profile.name || profile.email,
+        avatar: initials,
+      });
+
       setData(prev => ({
         ...prev,
         isLoggedIn: true,
         user: {
-          name: profile.email,
+          name: profile.name || profile.email,
           avatar: initials,
         },
       }));
@@ -469,6 +527,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.error('Supabase sign out error:', error.message);
       }
     }
+
+    clearGoogleSession();
 
     setData(prev => ({
       ...prev,
