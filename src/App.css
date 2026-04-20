@@ -166,6 +166,68 @@
   text-transform: uppercase;
   font-size: 0.86rem;
 }
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-view {
+  flex: 1;
+  padding-bottom: 64px;
+}
+
+.site-footer {
+  border-top: 1px solid rgba(122, 147, 255, 0.24);
+  background: rgba(5, 12, 35, 0.88);
+  backdrop-filter: blur(6px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1200;
+}
+
+.site-footer-text {
+  color: #9db1e6;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.site-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #8ca3dc;
+  font-size: 0.74rem;
+}
+
+.site-footer-links a {
+  color: #cfe1ff;
+  text-decoration: none;
+}
+
+.site-footer-links a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .app-view {
+    padding-bottom: 88px;
+  }
+
+  .site-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px 14px;
+  }
+}
 
 @media (max-width: 1080px) {
   .dashboard-layout {

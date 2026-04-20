@@ -212,7 +212,7 @@ VITE_SUPABASE_ANON_KEY=
 VITE_GOOGLE_CLIENT_ID=
 VITE_GOOGLE_CALENDAR_ID=
 VITE_GEMINI_API_KEY=
-VITE_GEMINI_MODEL=gemini-1.5-flash
+VITE_GEMINI_MODEL=gemini-2.0-flash
 ✦ Assumptions
 Users log study sessions regularly
 Internet connection required for AI + Calendar

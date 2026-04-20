@@ -1,7 +1,12 @@
 import { requestGoogleAccessToken } from './googleAuth';
 import type { GeminiStudyPlan, StudyPlanItem, StudySessionLog } from './studyLogic';
 
-export const googleCalendarId = import.meta.env.VITE_GOOGLE_CALENDAR_ID || 'primary';
+const configuredCalendarId = (import.meta.env.VITE_GOOGLE_CALENDAR_ID as string | undefined)?.trim();
+const looksLikeGoogleApiKey = (value: string) => /^AIza[\w-]{20,}$/.test(value);
+
+export const googleCalendarId = configuredCalendarId && !looksLikeGoogleApiKey(configuredCalendarId)
+  ? configuredCalendarId
+  : 'primary';
 
 const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly';
 

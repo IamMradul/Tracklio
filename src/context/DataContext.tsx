@@ -98,6 +98,10 @@ const STORAGE_KEY = 'tracklio_data';
 type AuthResult = { ok: boolean; message: string };
 
 const GOOGLE_SESSION_KEY = 'tracklio_google_session';
+const REQUIRED_CALENDAR_SCOPES = [
+  'https://www.googleapis.com/auth/calendar.events',
+  'https://www.googleapis.com/auth/calendar.readonly',
+];
 
 type GoogleSession = {
   email: string;
@@ -276,6 +280,15 @@ const clearGoogleSession = () => {
   localStorage.removeItem(GOOGLE_SESSION_KEY);
 };
 
+const hasRequiredCalendarScopes = (scope?: string) => {
+  if (!scope) {
+    return false;
+  }
+
+  const granted = new Set(scope.split(/\s+/).filter(Boolean));
+  return REQUIRED_CALENDAR_SCOPES.every((requiredScope) => granted.has(requiredScope));
+};
+
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
   const isGoogleDirectEnabled = Boolean(googleClientId);
@@ -300,6 +313,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const getStoredGoogleSession = () => {
     const session = readGoogleSession();
     if (!session?.accessToken || (session.expiresAt && session.expiresAt <= Date.now())) {
+      return null;
+    }
+
+    if (!hasRequiredCalendarScopes(session.scope)) {
+      clearGoogleSession();
       return null;
     }
 

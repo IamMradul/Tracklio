@@ -30,6 +30,13 @@ declare global {
 }
 
 const GOOGLE_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
+const GOOGLE_SIGNIN_SCOPE = [
+  'openid',
+  'email',
+  'profile',
+  'https://www.googleapis.com/auth/calendar.events',
+  'https://www.googleapis.com/auth/calendar.readonly',
+].join(' ');
 
 const loadGoogleScript = async (): Promise<void> => {
   if (window.google?.accounts?.oauth2) {
@@ -98,7 +105,7 @@ export const signInWithGoogleDirect = async (clientId: string): Promise<GoogleUs
     throw new Error('Google Client ID is not configured.');
   }
 
-  const token = await requestGoogleAccessToken(clientId, 'openid email profile');
+  const token = await requestGoogleAccessToken(clientId, GOOGLE_SIGNIN_SCOPE);
 
   const profileResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
     headers: {
