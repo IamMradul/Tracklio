@@ -12,7 +12,7 @@ import StudyAssistant from './StudyAssistant';
 type DashboardTab = 'overview' | 'sessions' | 'insights';
 
 const Dashboard: React.FC = () => {
-  const { data, logout } = useData();
+  const { data, logout, requestAuthPrompt } = useData();
   const [activeTab, setActiveTab] = React.useState<DashboardTab>('overview');
 
   return (
@@ -47,9 +47,21 @@ const Dashboard: React.FC = () => {
           </button>
         </div>
 
-        <button type="button" className="profile-avatar profile-button" onClick={logout} aria-label="Log out of StudyNX" title="Click to logout">
-          {data.user?.avatar || 'AK'}
-        </button>
+        {data.isLoggedIn ? (
+          <button type="button" className="profile-avatar profile-button" onClick={logout} aria-label="Log out of StudyNX" title="Click to logout">
+            {data.user?.avatar || 'AK'}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="profile-avatar profile-button profile-signin-button"
+            onClick={() => requestAuthPrompt('Sign in to save your changes.')}
+            aria-label="Sign in to StudyNX"
+            title="Click to sign in"
+          >
+            Sign in
+          </button>
+        )}
       </nav>
 
       {activeTab === 'overview' && (

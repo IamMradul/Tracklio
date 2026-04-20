@@ -4,7 +4,12 @@ import './Login.css';
 
 type AuthView = 'signin' | 'signup' | 'magic';
 
-const Login: React.FC = () => {
+type LoginProps = {
+  message?: string;
+  onDismiss?: () => void;
+};
+
+const Login: React.FC<LoginProps> = ({ message, onDismiss }) => {
   const [authView, setAuthView] = useState<AuthView>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -109,9 +114,16 @@ const Login: React.FC = () => {
   return (
     <div className="login-container">
       <div className="card login-card">
+        {onDismiss && (
+          <button type="button" className="login-dismiss-btn" onClick={onDismiss} aria-label="Close sign in prompt">
+            ×
+          </button>
+        )}
         <div className="login-logo">
-          Track<span>lio</span>
+          Study<span>NX</span>
         </div>
+
+        {message && <p className="login-banner">{message}</p>}
 
         {authMode === 'supabase-email' ? (
           <>

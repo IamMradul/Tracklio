@@ -78,6 +78,9 @@ interface DataContextType {
   isGoogleDirectEnabled: boolean;
   isGeminiEnabled: boolean;
   isAuthLoading: boolean;
+  authPromptMessage: string | null;
+  requestAuthPrompt: (message?: string) => void;
+  dismissAuthPrompt: () => void;
   signInWithGoogle: () => Promise<{ ok: boolean; message: string }>;
   signInWithPassword: (email: string, password: string) => Promise<{ ok: boolean; message: string }>;
   signUpWithPassword: (email: string, password: string) => Promise<{ ok: boolean; message: string }>;
@@ -297,6 +300,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const isHydratingFromSupabaseRef = useRef(false);
   const hydratedUserRef = useRef<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(authMode === 'supabase-email');
+  const [authPromptMessage, setAuthPromptMessage] = useState<string | null>(null);
 
   const [data, setData] = useState<AppData>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -322,6 +326,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     return session;
+  };
+
+  const requestAuthPrompt = (message = 'Sign in to save changes.') => {
+    setAuthPromptMessage(message);
+  };
+
+  const dismissAuthPrompt = () => {
+    setAuthPromptMessage(null);
   };
 
   useEffect(() => {
@@ -546,6 +558,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           avatar: initials,
         },
       }));
+      dismissAuthPrompt();
 
       return {
         ok: true,
@@ -655,6 +668,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isLoggedIn: true,
       user: { name, avatar: name.slice(0, 2).toUpperCase() },
     }));
+    dismissAuthPrompt();
   };
 
   const logout = async () => {
@@ -667,6 +681,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     clearGoogleSession();
+    dismissAuthPrompt();
 
     setData(prev => ({
       ...prev,
@@ -676,10 +691,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const updateData = (newData: Partial<AppData>) => {
+    if (!data.isLoggedIn) {
+      requestAuthPrompt('Sign in to save your dashboard changes.');
+      return;
+    }
+
     setData(prev => normalizeAppData({ ...prev, ...newData }));
   };
 
   const logStudySession = async (session: StudySessionLog): Promise<AuthResult> => {
+    if (!data.isLoggedIn) {
+      requestAuthPrompt('Sign in to save study changes.');
+      return {
+        ok: false,
+        message: 'Sign in to save study changes.',
+      };
+    }
+
     setData(prev => normalizeAppData(applyStudySessionLog(prev, session)));
 
     if (session.hours <= 0) {
@@ -825,6 +853,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isGoogleDirectEnabled,
         isGeminiEnabled,
         isAuthLoading,
+        authPromptMessage,
+        requestAuthPrompt,
+        dismissAuthPrompt,
         signInWithGoogle,
         signInWithPassword,
         signUpWithPassword,

@@ -23,7 +23,7 @@ const getLegalRouteFromHash = (): LegalRoute => {
 };
 
 function App() {
-  const { data, isAuthLoading } = useData();
+  const { authPromptMessage, dismissAuthPrompt } = useData();
   const [legalRoute, setLegalRoute] = useState<LegalRoute>(() => getLegalRouteFromHash());
 
   useEffect(() => {
@@ -43,10 +43,6 @@ function App() {
     content = <TermsOfService />;
   } else if (legalRoute === 'privacy') {
     content = <PrivacyPolicy />;
-  } else if (isAuthLoading) {
-    content = <div className="auth-loading">Restoring session...</div>;
-  } else if (!data.isLoggedIn) {
-    content = <Login />;
   } else {
     content = <Dashboard />;
   }
@@ -63,6 +59,10 @@ function App() {
           <a href="#/privacy">Privacy Policy</a>
         </nav>
       </footer>
+
+      {authPromptMessage && legalRoute === null && (
+        <Login message={authPromptMessage} onDismiss={dismissAuthPrompt} />
+      )}
     </div>
   );
 }

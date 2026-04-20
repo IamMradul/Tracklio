@@ -1,18 +1,39 @@
 .login-container {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
   padding: 16px;
+  background: rgba(2, 6, 18, 0.72);
+  backdrop-filter: blur(10px);
 }
 
 .login-card {
+  position: relative;
   width: 100%;
   max-width: 430px;
   text-align: center;
   border: 1px solid rgba(126, 152, 232, 0.3);
   box-shadow: 0 22px 40px rgba(3, 10, 30, 0.4);
   background: linear-gradient(180deg, rgba(10, 25, 60, 0.94), rgba(8, 19, 50, 0.95));
+}
+
+.login-dismiss-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid rgba(126, 152, 232, 0.28);
+  background: rgba(13, 27, 69, 0.9);
+  color: #dfe8ff;
+  font-size: 1.2rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
 }
 
 .login-logo {
@@ -27,6 +48,17 @@
 .login-logo span {
   font-weight: 500;
   color: var(--accent-blue);
+}
+
+.login-banner {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(123, 152, 255, 0.28);
+  background: rgba(9, 22, 53, 0.72);
+  color: #d4e2ff;
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 
 .auth-tabs {
