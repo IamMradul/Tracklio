@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useData } from '../context/DataContext';
 import type { Subject } from '../context/DataContext';
+import { toDateKey } from '../lib/studyLogic';
 import './SubjectsList.css';
 
 const CircularProgress: React.FC<{ progress: number, color: string, label: string, onClick: () => void }> = ({ progress, color, label, onClick }) => {
@@ -44,7 +45,7 @@ const SubjectsList: React.FC = () => {
   const [newSubjectTargetHours, setNewSubjectTargetHours] = useState('40');
   const [todayHoursInput, setTodayHoursInput] = useState('');
 
-  const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const todayKey = useMemo(() => toDateKey(new Date()), []);
 
   const selectedSubject = selectedSubjectId
     ? data.subjects.find(subject => subject.id === selectedSubjectId) ?? null
@@ -180,7 +181,7 @@ const SubjectsList: React.FC = () => {
     const days = Array.from({ length: 112 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (111 - i));
-      const dateKey = date.toISOString().slice(0, 10);
+      const dateKey = toDateKey(date);
       return {
         dateKey,
         hours: selectedSubject.dailyHours[dateKey] ?? 0,

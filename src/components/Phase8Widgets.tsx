@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useData } from '../context/DataContext';
+import { toDateKey } from '../lib/studyLogic';
 import './Widgets.css';
 import './Phase8Widgets.css';
 
@@ -184,7 +185,7 @@ export const CalendarWidget: React.FC = () => {
   const [monthOffset, setMonthOffset] = useState(0);
   const today = new Date();
   const baseMonth = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
-  const [selectedDate, setSelectedDate] = useState<string>(() => today.toISOString().slice(0, 10));
+  const [selectedDate, setSelectedDate] = useState<string>(() => toDateKey(today));
   const [upcomingEvents, setUpcomingEvents] = useState<Array<{ id: string; summary: string; start: { dateTime?: string; date?: string }; end: { dateTime?: string; date?: string }; description?: string }>>([]);
   const [calendarStatus, setCalendarStatus] = useState('Google Calendar is ready to sync study events.');
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
@@ -216,7 +217,7 @@ export const CalendarWidget: React.FC = () => {
     return '';
   };
 
-  const dateKeyFor = (day: number) => new Date(baseMonth.getFullYear(), baseMonth.getMonth(), day).toISOString().slice(0, 10);
+  const dateKeyFor = (day: number) => toDateKey(new Date(baseMonth.getFullYear(), baseMonth.getMonth(), day));
 
   const refreshUpcomingEvents = async () => {
     setIsCalendarLoading(true);
@@ -301,7 +302,7 @@ export const CalendarWidget: React.FC = () => {
         <div className="selected-day-header">
           <div>
             <small>Selected day</small>
-            <p>{new Date(selectedDate).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+            <p>{new Date(`${selectedDate}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</p>
           </div>
           <span>{selectedStudyHours > 0 ? 'Active' : 'Idle'}</span>
         </div>
@@ -323,7 +324,7 @@ export const CalendarWidget: React.FC = () => {
 
         <div className="selected-hours-grid" style={{ marginTop: '10px' }}>
           {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(hours => (
-            <button key={hours} type="button" className="widget-btn selected-hours-btn" aria-label={`Log ${hours} hours for ${new Date(selectedDate).toLocaleDateString()}`} onClick={() => setSelectedHours(hours)}>{hours}h</button>
+            <button key={hours} type="button" className="widget-btn selected-hours-btn" aria-label={`Log ${hours} hours for ${new Date(`${selectedDate}T00:00:00`).toLocaleDateString()}`} onClick={() => setSelectedHours(hours)}>{hours}h</button>
           ))}
         </div>
 

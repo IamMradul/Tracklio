@@ -1,8 +1,7 @@
 import React from 'react';
 import { useData } from '../context/DataContext';
+import { toDateKey } from '../lib/studyLogic';
 import './InsightsPanel.css';
-
-const toDateKey = (date: Date) => date.toISOString().slice(0, 10);
 
 const isValidDateKey = (key: string) => /^\d{4}-\d{2}-\d{2}$/.test(key);
 

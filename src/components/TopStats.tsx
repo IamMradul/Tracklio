@@ -1,8 +1,7 @@
 import React from 'react';
 import { useData } from '../context/DataContext';
+import { toDateKey } from '../lib/studyLogic';
 import './TopStats.css';
-
-const toDateKey = (date: Date) => date.toISOString().slice(0, 10);
 
 const TopStats: React.FC = () => {
   const { data } = useData();
@@ -10,14 +9,18 @@ const TopStats: React.FC = () => {
   const todayKey = toDateKey(now);
   const todayHours = data.activityData[todayKey] ?? 0;
 
-  const last7 = Array.from({ length: 7 }, (_, idx) => {
+  const weekEntries = Array.from({ length: 7 }, (_, idx) => {
     const d = new Date(now);
     d.setDate(now.getDate() - (6 - idx));
-    return data.activityData[toDateKey(d)] ?? 0;
+    return {
+      label: d.toLocaleDateString(undefined, { weekday: 'short' }).slice(0, 2),
+      fullLabel: d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }),
+      hours: data.activityData[toDateKey(d)] ?? 0,
+    };
   });
 
-  const weeklyHours = last7.reduce((sum, hours) => sum + hours, 0);
-  const activeDays = last7.filter(hours => hours > 0).length;
+  const weeklyHours = weekEntries.reduce((sum, entry) => sum + entry.hours, 0);
+  const activeDays = weekEntries.filter((entry) => entry.hours > 0).length;
   const focusScore = Math.min(100, Math.round((weeklyHours / Math.max(1, data.weeklyTargetHours)) * 100));
   const streak = (() => {
     let count = 0;
@@ -77,13 +80,18 @@ const TopStats: React.FC = () => {
           <article className="mini-stat-card wide">
             <span>This week</span>
             <div className="week-bars">
-              {last7.map((bar, idx) => (
-                <div key={idx} className="week-bar" style={{ height: `${Math.max(16, bar * 20)}%` }}></div>
+              {weekEntries.map((entry) => (
+                <div
+                  key={entry.fullLabel}
+                  className="week-bar"
+                  title={`${entry.fullLabel}: ${entry.hours.toFixed(1)}h`}
+                  style={{ height: `${Math.max(16, entry.hours * 20)}%` }}
+                ></div>
               ))}
             </div>
             <div className="week-days">
-              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, idx) => (
-                <span key={`${day}-${idx}`}>{day}</span>
+              {weekEntries.map((entry) => (
+                <span key={`${entry.fullLabel}-label`}>{entry.label}</span>
               ))}
             </div>
           </article>

@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useData } from '../context/DataContext';
+import { toDateKey } from '../lib/studyLogic';
 import './Heatmap.css';
-
-const toDateKey = (date: Date) => date.toISOString().slice(0, 10);
 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const getBucketClass = (hours: number) => {
@@ -142,7 +141,7 @@ const Heatmap: React.FC = () => {
 
                     const dateKey = cell.dateKey;
 
-                    const dateLabel = new Date(dateKey).toLocaleDateString(undefined, {
+                    const dateLabel = new Date(`${dateKey}T00:00:00`).toLocaleDateString(undefined, {
                       weekday: 'short',
                       day: 'numeric',
                       month: 'short',

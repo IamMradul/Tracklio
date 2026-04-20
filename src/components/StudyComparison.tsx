@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
+import { toDateKey } from '../lib/studyLogic';
 import './StudyComparison.css';
 
 type Timeframe = 'weekly' | 'monthly' | 'yearly';
@@ -8,7 +9,6 @@ const StudyComparison: React.FC = () => {
   const [timeframe, setTimeframe] = useState<Timeframe>('weekly');
   const { data } = useData();
 
-  const toDateKey = (date: Date) => date.toISOString().slice(0, 10);
   const readHours = (date: Date) => data.activityData[toDateKey(date)] ?? 0;
 
   const dataMap = {

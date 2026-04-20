@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
+import { toDateKey } from '../lib/studyLogic';
 import './Widgets.css';
 
 export const Pomodoro: React.FC = () => {
@@ -169,7 +170,6 @@ export const ExamCountdown: React.FC = () => {
 export const WeeklyGoal: React.FC = () => {
   const { data, updateData } = useData();
   const now = new Date();
-  const toDateKey = (date: Date) => date.toISOString().slice(0, 10);
   const current = Array.from({ length: 7 }, (_, idx) => {
     const d = new Date(now);
     d.setDate(now.getDate() - idx);
