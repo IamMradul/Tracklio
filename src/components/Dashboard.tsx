@@ -7,6 +7,7 @@ import StudyComparison from './StudyComparison';
 import { Pomodoro, ExamCountdown, WeeklyGoal } from './Phase7Widgets';
 import { Resources, Reminders, CalendarWidget } from './Phase8Widgets';
 import InsightsPanel from './InsightsPanel';
+import StudyAssistant from './StudyAssistant';
 
 type DashboardTab = 'overview' | 'sessions' | 'insights';
 
@@ -23,18 +24,21 @@ const Dashboard: React.FC = () => {
 
         <div className="nav-pill-group">
           <button
+            type="button"
             className={`nav-pill ${activeTab === 'overview' ? 'active' : ''}`}
             onClick={() => setActiveTab('overview')}
           >
             Overview
           </button>
           <button
+            type="button"
             className={`nav-pill ${activeTab === 'sessions' ? 'active' : ''}`}
             onClick={() => setActiveTab('sessions')}
           >
             Sessions
           </button>
           <button
+            type="button"
             className={`nav-pill ${activeTab === 'insights' ? 'active' : ''}`}
             onClick={() => setActiveTab('insights')}
           >
@@ -42,9 +46,9 @@ const Dashboard: React.FC = () => {
           </button>
         </div>
 
-        <div className="profile-avatar" onClick={logout} title="Click to logout" style={{ cursor: 'pointer' }}>
+        <button type="button" className="profile-avatar profile-button" onClick={logout} aria-label="Log out of Tracklio" title="Click to logout">
           {data.user?.avatar || 'AK'}
-        </div>
+        </button>
       </nav>
 
       {activeTab === 'overview' && (
@@ -61,6 +65,7 @@ const Dashboard: React.FC = () => {
           </section>
 
           <aside className="dashboard-sidebar">
+            <StudyAssistant />
             <CalendarWidget />
             <Pomodoro />
             <ExamCountdown />
@@ -77,6 +82,7 @@ const Dashboard: React.FC = () => {
           </section>
 
           <aside className="dashboard-sidebar">
+            <StudyAssistant />
             <Pomodoro />
             <WeeklyGoal />
             <ExamCountdown />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useData } from '../context/DataContext';
 import './Widgets.css';
 import './Phase8Widgets.css';
@@ -63,10 +63,10 @@ export const Resources: React.FC = () => {
             <span className="resource-title">{res.title}</span>
             <span className="resource-tag">{res.tag}</span>
             <div className="subject-actions">
-              <button type="button" className="widget-btn mini" onClick={() => moveResource(res.id, -1)}>↑</button>
-              <button type="button" className="widget-btn mini" onClick={() => moveResource(res.id, 1)}>↓</button>
-              <button type="button" className="widget-btn mini" onClick={() => editResource(res.id)}>edit</button>
-              <button type="button" className="widget-btn mini danger" onClick={() => deleteResource(res.id)}>del</button>
+              <button type="button" className="widget-btn mini" aria-label={`Move ${res.title} up`} onClick={() => moveResource(res.id, -1)}>↑</button>
+              <button type="button" className="widget-btn mini" aria-label={`Move ${res.title} down`} onClick={() => moveResource(res.id, 1)}>↓</button>
+              <button type="button" className="widget-btn mini" aria-label={`Edit ${res.title}`} onClick={() => editResource(res.id)}>edit</button>
+              <button type="button" className="widget-btn mini danger" aria-label={`Delete ${res.title}`} onClick={() => deleteResource(res.id)}>del</button>
             </div>
           </div>
         ))}
@@ -86,7 +86,7 @@ export const Resources: React.FC = () => {
             onChange={(e) => setTag(e.target.value)}
           />
         </div>
-        <button className="add-resource-btn" onClick={addResource}>+ add resource</button>
+        <button type="button" className="add-resource-btn" onClick={addResource}>+ add resource</button>
       </div>
     </div>
   );
@@ -157,10 +157,10 @@ export const Reminders: React.FC = () => {
             </div>
             <div className="reminder-desc">{rem.description}</div>
             <div className="reminder-actions">
-              <button className="widget-btn mini" onClick={() => moveReminder(rem.id, -1)}>↑</button>
-              <button className="widget-btn mini" onClick={() => moveReminder(rem.id, 1)}>↓</button>
-              <button className="widget-btn mini" onClick={() => editReminder(rem.id)}>edit</button>
-              <button className="widget-btn mini danger" onClick={() => deleteReminder(rem.id)}>del</button>
+              <button type="button" className="widget-btn mini" aria-label={`Move ${rem.title} up`} onClick={() => moveReminder(rem.id, -1)}>↑</button>
+              <button type="button" className="widget-btn mini" aria-label={`Move ${rem.title} down`} onClick={() => moveReminder(rem.id, 1)}>↓</button>
+              <button type="button" className="widget-btn mini" aria-label={`Edit ${rem.title}`} onClick={() => editReminder(rem.id)}>edit</button>
+              <button type="button" className="widget-btn mini danger" aria-label={`Delete ${rem.title}`} onClick={() => deleteReminder(rem.id)}>del</button>
             </div>
           </div>
         ))}
@@ -173,18 +173,22 @@ export const Reminders: React.FC = () => {
           value={newReminder}
           onChange={(e) => setNewReminder(e.target.value)}
         />
-        <button className="widget-btn add-btn" onClick={addReminder}>+</button>
+        <button type="button" className="widget-btn add-btn" aria-label="Add reminder" onClick={addReminder}>+</button>
       </div>
     </div>
   );
 };
 
 export const CalendarWidget: React.FC = () => {
-  const { data, updateData } = useData();
+  const { data, logStudySession, fetchUpcomingCalendarEvents, planTomorrowStudySchedule } = useData();
   const [monthOffset, setMonthOffset] = useState(0);
   const today = new Date();
   const baseMonth = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
   const [selectedDate, setSelectedDate] = useState<string>(() => today.toISOString().slice(0, 10));
+  const [upcomingEvents, setUpcomingEvents] = useState<Array<{ id: string; summary: string; start: { dateTime?: string; date?: string }; end: { dateTime?: string; date?: string }; description?: string }>>([]);
+  const [calendarStatus, setCalendarStatus] = useState('Google Calendar is ready to sync study events.');
+  const [isCalendarLoading, setIsCalendarLoading] = useState(false);
+  const [isPlanningTomorrow, setIsPlanningTomorrow] = useState(false);
 
   const monthLabel = baseMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -214,14 +218,41 @@ export const CalendarWidget: React.FC = () => {
 
   const dateKeyFor = (day: number) => new Date(baseMonth.getFullYear(), baseMonth.getMonth(), day).toISOString().slice(0, 10);
 
-  const setSelectedHours = (hours: number) => {
-    const nextActivityData = { ...data.activityData };
-    if (hours <= 0) {
-      delete nextActivityData[selectedDate];
-    } else {
-      nextActivityData[selectedDate] = Number(hours.toFixed(1));
+  const refreshUpcomingEvents = async () => {
+    setIsCalendarLoading(true);
+    const result = await fetchUpcomingCalendarEvents();
+    setUpcomingEvents(result.events);
+    setCalendarStatus(result.message);
+    setIsCalendarLoading(false);
+  };
+
+  useEffect(() => {
+    void refreshUpcomingEvents();
+  }, [data.user?.name]);
+
+  const setSelectedHours = async (hours: number) => {
+    await logStudySession({
+      source: 'heatmap',
+      dateKey: selectedDate,
+      hours: Number(hours.toFixed(1)),
+    });
+    void refreshUpcomingEvents();
+  };
+
+  const planTomorrow = async () => {
+    setIsPlanningTomorrow(true);
+    const result = await planTomorrowStudySchedule();
+    setCalendarStatus(result.message);
+    await refreshUpcomingEvents();
+    setIsPlanningTomorrow(false);
+  };
+
+  const formatEventTime = (value?: string) => {
+    if (!value) {
+      return 'All day';
     }
-    updateData({ activityData: nextActivityData, activityDataMode: 'hours' });
+
+    return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
@@ -229,9 +260,9 @@ export const CalendarWidget: React.FC = () => {
       <div className="calendar-topline">Monthly Overview</div>
 
       <div className="calendar-header">
-        <button className="cal-nav" aria-label="Previous month" onClick={() => setMonthOffset((prev) => prev - 1)}>&lt;</button>
+        <button type="button" className="cal-nav" aria-label="Previous month" onClick={() => setMonthOffset((prev) => prev - 1)}>&lt;</button>
         <div className="cal-month">{monthLabel}</div>
-        <button className="cal-nav" aria-label="Next month" onClick={() => setMonthOffset((prev) => prev + 1)}>&gt;</button>
+        <button type="button" className="cal-nav" aria-label="Next month" onClick={() => setMonthOffset((prev) => prev + 1)}>&gt;</button>
       </div>
 
       <div className="calendar-grid">
@@ -292,7 +323,32 @@ export const CalendarWidget: React.FC = () => {
 
         <div className="selected-hours-grid" style={{ marginTop: '10px' }}>
           {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(hours => (
-            <button key={hours} className="widget-btn selected-hours-btn" onClick={() => setSelectedHours(hours)}>{hours}h</button>
+            <button key={hours} type="button" className="widget-btn selected-hours-btn" aria-label={`Log ${hours} hours for ${new Date(selectedDate).toLocaleDateString()}`} onClick={() => setSelectedHours(hours)}>{hours}h</button>
+          ))}
+        </div>
+
+        <button type="button" className="widget-btn calendar-plan-btn" onClick={planTomorrow} disabled={isPlanningTomorrow} aria-label="Plan tomorrow's study sessions">
+          {isPlanningTomorrow ? 'Planning...' : 'Plan Tomorrow'}
+        </button>
+
+        <div className="calendar-sync-status" aria-live="polite">
+          {calendarStatus}
+        </div>
+
+        <div className="upcoming-study-list">
+          <div className="upcoming-study-heading">
+            <span>Upcoming Tracklio sessions</span>
+            <small>{isCalendarLoading ? 'Loading…' : `${upcomingEvents.length} events`}</small>
+          </div>
+
+          {upcomingEvents.length === 0 ? (
+            <p className="upcoming-study-empty">No upcoming Tracklio events synced yet.</p>
+          ) : upcomingEvents.slice(0, 4).map((event) => (
+            <article key={event.id} className="upcoming-study-item">
+              <strong>{event.summary}</strong>
+              <span>{formatEventTime(event.start.dateTime)} - {formatEventTime(event.end.dateTime)}</span>
+              {event.description && <p>{event.description}</p>}
+            </article>
           ))}
         </div>
       </div>

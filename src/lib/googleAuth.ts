@@ -4,6 +4,12 @@ export interface GoogleUserProfile {
   picture?: string;
 }
 
+export interface GoogleTokenResult {
+  accessToken: string;
+  expiresAt: number;
+  scope: string;
+}
+
 declare global {
   interface Window {
     google?: {
@@ -12,7 +18,7 @@ declare global {
           initTokenClient: (config: {
             client_id: string;
             scope: string;
-            callback: (response: { access_token?: string; error?: string }) => void;
+              callback: (response: { access_token?: string; expires_in?: number; scope?: string; error?: string }) => void;
             error_callback?: (error: { type?: string }) => void;
           }) => {
             requestAccessToken: (options?: { prompt?: string }) => void;
@@ -48,24 +54,28 @@ const loadGoogleScript = async (): Promise<void> => {
   });
 };
 
-export const signInWithGoogleDirect = async (clientId: string): Promise<GoogleUserProfile> => {
+export const requestGoogleAccessToken = async (clientId: string, scope: string): Promise<GoogleTokenResult> => {
   if (!clientId) {
     throw new Error('Google Client ID is not configured.');
   }
 
   await loadGoogleScript();
 
-  const token = await new Promise<string>((resolve, reject) => {
+  const token = await new Promise<GoogleTokenResult>((resolve, reject) => {
     const tokenClient = window.google?.accounts?.oauth2?.initTokenClient({
       client_id: clientId,
-      scope: 'openid email profile',
+      scope,
       callback: (response) => {
         if (!response.access_token) {
           reject(new Error(response.error || 'Failed to get Google access token.'));
           return;
         }
 
-        resolve(response.access_token);
+        resolve({
+          accessToken: response.access_token,
+          expiresAt: Date.now() + ((response.expires_in ?? 3600) * 1000),
+          scope: response.scope || scope,
+        });
       },
       error_callback: () => {
         reject(new Error('Google sign-in was cancelled or failed.'));
@@ -80,9 +90,19 @@ export const signInWithGoogleDirect = async (clientId: string): Promise<GoogleUs
     tokenClient.requestAccessToken({ prompt: 'consent' });
   });
 
+  return token;
+};
+
+export const signInWithGoogleDirect = async (clientId: string): Promise<GoogleUserProfile & GoogleTokenResult> => {
+  if (!clientId) {
+    throw new Error('Google Client ID is not configured.');
+  }
+
+  const token = await requestGoogleAccessToken(clientId, 'openid email profile');
+
   const profileResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${token.accessToken}`,
     },
   });
 
@@ -96,5 +116,10 @@ export const signInWithGoogleDirect = async (clientId: string): Promise<GoogleUs
     throw new Error('Google account email is not available.');
   }
 
-  return profile;
+  return {
+    ...profile,
+    accessToken: token.accessToken,
+    expiresAt: token.expiresAt,
+    scope: token.scope,
+  };
 };

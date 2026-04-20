@@ -329,6 +329,82 @@
   padding-right: 0;
 }
 
+.calendar-plan-btn {
+  width: 100%;
+  margin-top: 12px;
+  background: linear-gradient(90deg, #35d6b5, #5f8dff);
+  color: #07132f;
+  font-weight: 700;
+}
+
+.calendar-plan-btn:disabled {
+  opacity: 0.75;
+}
+
+.calendar-sync-status {
+  margin-top: 10px;
+  color: #95aad9;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.upcoming-study-list {
+  margin-top: 12px;
+  border-top: 1px solid rgba(125, 150, 230, 0.16);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.upcoming-study-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.upcoming-study-heading span {
+  color: #eaf2ff;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.upcoming-study-heading small {
+  color: #8ea1d4;
+  font-size: 0.68rem;
+}
+
+.upcoming-study-empty {
+  color: #8ea1d4;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.upcoming-study-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(12, 24, 58, 0.76);
+  border: 1px solid rgba(118, 142, 223, 0.2);
+}
+
+.upcoming-study-item strong {
+  color: #edf4ff;
+  font-size: 0.78rem;
+}
+
+.upcoming-study-item span,
+.upcoming-study-item p {
+  color: #96aad8;
+  font-size: 0.68rem;
+  margin: 0;
+  line-height: 1.45;
+}
+
 @media (max-width: 1080px) {
   .calendar-card {
     min-height: auto;

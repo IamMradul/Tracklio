@@ -8,7 +8,7 @@
   --bg-input: #111f4d;
 
   --text-main: #cbdbff;
-  --text-muted: #8391b9;
+  --text-muted: #97a8d5;
   --text-heading: #eef4ff;
   --text-inverse: #0f1a3d;
 
@@ -44,6 +44,14 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid rgba(186, 211, 255, 0.96);
+  outline-offset: 2px;
 }
 
 .card {

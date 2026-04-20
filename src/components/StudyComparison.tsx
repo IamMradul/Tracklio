@@ -78,18 +78,21 @@ const StudyComparison: React.FC = () => {
       
       <div className="toggle-group">
         <button 
+          type="button"
           className={`toggle-btn ${timeframe === 'weekly' ? 'active' : ''}`}
           onClick={() => setTimeframe('weekly')}
         >
           weekly
         </button>
         <button 
+          type="button"
           className={`toggle-btn ${timeframe === 'monthly' ? 'active' : ''}`}
           onClick={() => setTimeframe('monthly')}
         >
           monthly
         </button>
         <button 
+          type="button"
           className={`toggle-btn ${timeframe === 'yearly' ? 'active' : ''}`}
           onClick={() => setTimeframe('yearly')}
         >

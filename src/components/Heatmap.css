@@ -84,6 +84,24 @@
   justify-content: space-between;
 }
 
+.heatmap-selection-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(120, 145, 226, 0.16);
+  background: rgba(10, 24, 58, 0.62);
+}
+
+.heatmap-selection-label {
+  color: #8ea1d4;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .month-block {
   min-width: 0;
   flex: 1;
@@ -120,6 +138,21 @@
   background: #2b3b5f;
 }
 
+.month-dot-button {
+  padding: 0;
+  border: 1px solid transparent;
+  outline: none;
+}
+
+.month-dot-button.selected {
+  box-shadow: 0 0 0 2px rgba(182, 205, 255, 0.7);
+}
+
+.month-dot-button:focus-visible {
+  border-color: rgba(182, 205, 255, 0.9);
+  box-shadow: 0 0 0 2px rgba(182, 205, 255, 0.4);
+}
+
 .month-dot.empty {
   background: transparent;
   box-shadow: none;
@@ -143,6 +176,14 @@
 
 .bucket-4 {
   background: #8fe6ad;
+}
+
+.month-dot-button.bucket-0,
+.month-dot-button.bucket-1,
+.month-dot-button.bucket-2,
+.month-dot-button.bucket-3,
+.month-dot-button.bucket-4 {
+  cursor: pointer;
 }
 
 .month-meta {

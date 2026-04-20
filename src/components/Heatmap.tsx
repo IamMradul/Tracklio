@@ -47,33 +47,28 @@ const buildMonthCells = (year: number, monthIndex: number, activityData: Record<
 };
 
 const Heatmap: React.FC = () => {
-  const { data, updateData } = useData();
+  const { data, logStudySession } = useData();
   const now = new Date();
   const year = now.getFullYear();
   const todayKey = toDateKey(now);
   const todayHours = data.activityData[todayKey] ?? 0;
   const [todayHoursInput, setTodayHoursInput] = useState(String(todayHours));
+  const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
 
   useEffect(() => {
     setTodayHoursInput(String(todayHours));
   }, [todayHours]);
 
-  const saveTodayHours = () => {
+  const saveTodayHours = async () => {
     const parsedHours = Number.parseFloat(todayHoursInput);
     if (!Number.isFinite(parsedHours) || parsedHours < 0) {
       return;
     }
 
-    const nextActivityData = { ...data.activityData };
-    if (parsedHours === 0) {
-      delete nextActivityData[todayKey];
-    } else {
-      nextActivityData[todayKey] = Number(parsedHours.toFixed(1));
-    }
-
-    updateData({
-      activityData: nextActivityData,
-      activityDataMode: 'hours',
+    await logStudySession({
+      source: 'heatmap',
+      dateKey: todayKey,
+      hours: Number(parsedHours.toFixed(1)),
     });
   };
 
@@ -89,6 +84,12 @@ const Heatmap: React.FC = () => {
   });
 
   const totalYearHours = months.reduce((sum, month) => sum + month.monthHours, 0);
+  const selectedDateHours = data.activityData[selectedDateKey] ?? 0;
+  const selectedDateLabel = new Date(`${selectedDateKey}T00:00:00`).toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
 
   return (
     <section className="card heatmap-container">
@@ -116,6 +117,12 @@ const Heatmap: React.FC = () => {
         </div>
       </div>
 
+      <div className="heatmap-selection-row" aria-live="polite">
+        <span className="heatmap-selection-label">Selected day</span>
+        <strong>{selectedDateLabel}</strong>
+        <span>{selectedDateHours.toFixed(1)}h studied</span>
+      </div>
+
       <div className="year-heatmap-strip" aria-label="Yearly study heatmap">
         {months.map((month) => (
           <article key={month.monthLabel} className={`month-block ${month.isCurrentMonth ? 'current-month' : ''}`}>
@@ -133,18 +140,24 @@ const Heatmap: React.FC = () => {
                       );
                     }
 
-                    const dateLabel = new Date(cell.dateKey).toLocaleDateString(undefined, {
+                    const dateKey = cell.dateKey;
+
+                    const dateLabel = new Date(dateKey).toLocaleDateString(undefined, {
                       weekday: 'short',
                       day: 'numeric',
                       month: 'short',
                     });
 
                     return (
-                      <span
-                        key={`${month.monthLabel}-${cell.dateKey}`}
-                        className={`month-dot ${getBucketClass(cell.hours)}`}
+                      <button
+                        key={`${month.monthLabel}-${dateKey}`}
+                        type="button"
+                        className={`month-dot month-dot-button ${getBucketClass(cell.hours)} ${selectedDateKey === dateKey ? 'selected' : ''}`}
                         title={`${dateLabel}: ${cell.hours.toFixed(1)}h`}
-                      ></span>
+                        aria-label={`${dateLabel}, ${cell.hours.toFixed(1)} hours studied`}
+                        aria-pressed={selectedDateKey === dateKey}
+                        onClick={() => setSelectedDateKey(dateKey)}
+                      ></button>
                     );
                   })}
                 </div>

@@ -37,10 +37,10 @@ export const Pomodoro: React.FC = () => {
       </div>
       <div className="timer-label">focus session</div>
       <div className="timer-controls">
-        <button className="widget-btn" onClick={toggleTimer}>
+        <button type="button" className="widget-btn" onClick={toggleTimer}>
           {isActive ? 'pause' : 'start'}
         </button>
-        <button className="widget-btn" onClick={resetTimer}>
+        <button type="button" className="widget-btn" onClick={resetTimer}>
           reset
         </button>
       </div>
@@ -137,10 +137,10 @@ export const ExamCountdown: React.FC = () => {
               <div className="exam-progress-fill" style={{ width: `${exam.progress}%`, backgroundColor: exam.color }}></div>
             </div>
             <div className="subject-actions">
-              <button className="widget-btn mini" onClick={() => moveExam(exam.id, -1)}>↑</button>
-              <button className="widget-btn mini" onClick={() => moveExam(exam.id, 1)}>↓</button>
-              <button className="widget-btn mini" onClick={() => editExam(exam.id)}>edit</button>
-              <button className="widget-btn mini danger" onClick={() => removeExam(exam.id)}>del</button>
+              <button type="button" className="widget-btn mini" aria-label={`Move ${exam.title} up`} onClick={() => moveExam(exam.id, -1)}>↑</button>
+              <button type="button" className="widget-btn mini" aria-label={`Move ${exam.title} down`} onClick={() => moveExam(exam.id, 1)}>↓</button>
+              <button type="button" className="widget-btn mini" aria-label={`Edit ${exam.title}`} onClick={() => editExam(exam.id)}>edit</button>
+              <button type="button" className="widget-btn mini danger" aria-label={`Delete ${exam.title}`} onClick={() => removeExam(exam.id)}>del</button>
             </div>
           </div>
         ))}
@@ -160,7 +160,7 @@ export const ExamCountdown: React.FC = () => {
           value={date}
           onChange={(e) => setDate(e.target.value)}
         />
-        <button className="widget-btn exam-add-btn" onClick={addExam}>+</button>
+        <button type="button" className="widget-btn exam-add-btn" aria-label="Add exam" onClick={addExam}>+</button>
       </div>
     </div>
   );
@@ -200,8 +200,8 @@ export const WeeklyGoal: React.FC = () => {
       </div>
 
       <div className="add-reminder-row" style={{ marginTop: '10px' }}>
-        <button className="widget-btn mini" onClick={() => adjustTarget(-1)}>-1h</button>
-        <button className="widget-btn mini" onClick={() => adjustTarget(1)}>+1h</button>
+        <button type="button" className="widget-btn mini" aria-label="Decrease weekly goal by 1 hour" onClick={() => adjustTarget(-1)}>-1h</button>
+        <button type="button" className="widget-btn mini" aria-label="Increase weekly goal by 1 hour" onClick={() => adjustTarget(1)}>+1h</button>
       </div>
     </div>
   );

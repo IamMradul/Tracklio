@@ -3,6 +3,9 @@ import type { ReactNode } from 'react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { signInWithGoogleDirect } from '../lib/googleAuth';
+import { isGeminiConfigured, generateGeminiText } from '../lib/gemini';
+import { applyStudySessionLog, buildGeminiPlanPrompt, buildGeminiPrompt, buildStudyContext, createFallbackTomorrowPlan, parseGeminiStudyPlan, toDateKey, type GeminiStudyPlan, type StudySessionLog } from '../lib/studyLogic';
+import { buildStudySessionDraft, fetchUpcomingTracklioEventsWithToken, syncStudySessionEventWithToken, syncTomorrowPlanToCalendarWithToken, type CalendarListItem } from '../lib/googleCalendar';
 
 // --- Types ---
 export interface Subject {
@@ -73,6 +76,7 @@ interface DataContextType {
   data: AppData;
   authMode: 'supabase-email' | 'local';
   isGoogleDirectEnabled: boolean;
+  isGeminiEnabled: boolean;
   isAuthLoading: boolean;
   signInWithGoogle: () => Promise<{ ok: boolean; message: string }>;
   signInWithPassword: (email: string, password: string) => Promise<{ ok: boolean; message: string }>;
@@ -82,6 +86,10 @@ interface DataContextType {
   login: (name: string) => void;
   logout: () => Promise<void>;
   updateData: (newData: Partial<AppData>) => void;
+  logStudySession: (session: StudySessionLog) => Promise<AuthResult>;
+  askGeminiAssistant: (question: string) => Promise<{ ok: boolean; message: string; response?: string }>;
+  planTomorrowStudySchedule: () => Promise<{ ok: boolean; message: string; plan?: GeminiStudyPlan }>;
+  fetchUpcomingCalendarEvents: () => Promise<{ ok: boolean; message: string; events: CalendarListItem[] }>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -95,6 +103,9 @@ type GoogleSession = {
   email: string;
   name: string;
   avatar: string;
+  accessToken?: string;
+  expiresAt?: number;
+  scope?: string;
 };
 
 const toProgressPayload = (state: AppData): ProgressPayload => ({
@@ -248,6 +259,9 @@ const readGoogleSession = (): GoogleSession | null => {
       email: parsed.email,
       name: parsed.name,
       avatar: parsed.avatar,
+      accessToken: typeof parsed.accessToken === 'string' ? parsed.accessToken : undefined,
+      expiresAt: typeof parsed.expiresAt === 'number' ? parsed.expiresAt : undefined,
+      scope: typeof parsed.scope === 'string' ? parsed.scope : undefined,
     };
   } catch {
     return null;
@@ -265,6 +279,7 @@ const clearGoogleSession = () => {
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
   const isGoogleDirectEnabled = Boolean(googleClientId);
+  const isGeminiEnabled = isGeminiConfigured;
   const authMode: 'supabase-email' | 'local' = isSupabaseConfigured ? 'supabase-email' : 'local';
   const isHydratingFromSupabaseRef = useRef(false);
   const hydratedUserRef = useRef<string | null>(null);
@@ -281,6 +296,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
     return defaultData;
   });
+
+  const getStoredGoogleSession = () => {
+    const session = readGoogleSession();
+    if (!session?.accessToken || (session.expiresAt && session.expiresAt <= Date.now())) {
+      return null;
+    }
+
+    return session;
+  };
 
   useEffect(() => {
     const supabaseClient = supabase;
@@ -491,6 +515,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         email: profile.email,
         name: profile.name || profile.email,
         avatar: initials,
+        accessToken: profile.accessToken,
+        expiresAt: profile.expiresAt,
+        scope: profile.scope,
       });
 
       setData(prev => ({
@@ -634,12 +661,151 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setData(prev => normalizeAppData({ ...prev, ...newData }));
   };
 
+  const logStudySession = async (session: StudySessionLog): Promise<AuthResult> => {
+    setData(prev => normalizeAppData(applyStudySessionLog(prev, session)));
+
+    if (session.hours <= 0) {
+      return {
+        ok: true,
+        message: 'Study session cleared locally.',
+      };
+    }
+
+    const storedSession = getStoredGoogleSession();
+    if (!storedSession?.accessToken) {
+      return {
+        ok: true,
+        message: 'Study session logged locally.',
+      };
+    }
+
+    try {
+      await syncStudySessionEventWithToken(storedSession.accessToken, buildStudySessionDraft(session));
+      return {
+        ok: true,
+        message: 'Study session logged and synced to Google Calendar.',
+      };
+    } catch (error) {
+      return {
+        ok: true,
+        message: error instanceof Error
+          ? `Study session logged locally. Calendar sync skipped: ${error.message}`
+          : 'Study session logged locally. Calendar sync skipped.',
+      };
+    }
+  };
+
+  const askGeminiAssistant = async (question: string) => {
+    if (!isGeminiEnabled) {
+      return {
+        ok: false,
+        message: 'Gemini API is not configured.',
+      };
+    }
+
+    try {
+      const context = buildStudyContext(data);
+      const prompt = buildGeminiPrompt(context, question);
+      const response = await generateGeminiText(prompt);
+
+      return {
+        ok: true,
+        message: 'Gemini response ready.',
+        response,
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message: error instanceof Error ? error.message : 'Gemini request failed.',
+      };
+    }
+  };
+
+  const planTomorrowStudySchedule = async () => {
+    if (!isGeminiEnabled) {
+      return {
+        ok: false,
+        message: 'Gemini API is not configured.',
+      };
+    }
+
+    const context = buildStudyContext(data);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowKey = toDateKey(tomorrow);
+
+    try {
+      const prompt = buildGeminiPlanPrompt(context, tomorrowKey);
+      const responseText = await generateGeminiText(prompt);
+      const plan = parseGeminiStudyPlan(responseText, context, tomorrowKey);
+      const storedSession = getStoredGoogleSession();
+
+      if (storedSession?.accessToken) {
+        await syncTomorrowPlanToCalendarWithToken(storedSession.accessToken, plan);
+      }
+
+      return {
+        ok: true,
+        message: storedSession?.accessToken
+          ? `Planned ${plan.schedule.length} sessions and synced them to Google Calendar.`
+          : `Planned ${plan.schedule.length} sessions. Sign in with Google to sync them to Calendar.`,
+        plan,
+      };
+    } catch (error) {
+      const fallbackPlan = createFallbackTomorrowPlan(context, tomorrowKey);
+      const storedSession = getStoredGoogleSession();
+
+      if (storedSession?.accessToken) {
+        try {
+          await syncTomorrowPlanToCalendarWithToken(storedSession.accessToken, fallbackPlan);
+        } catch (calendarError) {
+          console.error('Google Calendar fallback sync error:', calendarError);
+        }
+      }
+
+      return {
+        ok: true,
+        message: error instanceof Error
+          ? `Gemini was unavailable, so Tracklio created a fallback plan: ${error.message}`
+          : 'Gemini was unavailable, so Tracklio created a fallback plan.',
+        plan: fallbackPlan,
+      };
+    }
+  };
+
+  const fetchUpcomingCalendarEvents = async () => {
+    const storedSession = getStoredGoogleSession();
+    if (!storedSession?.accessToken) {
+      return {
+        ok: true,
+        message: 'Google Calendar is not connected yet.',
+        events: [],
+      };
+    }
+
+    try {
+      const events = await fetchUpcomingTracklioEventsWithToken(storedSession.accessToken);
+      return {
+        ok: true,
+        message: 'Upcoming study events loaded.',
+        events,
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message: error instanceof Error ? error.message : 'Could not load Google Calendar events.',
+        events: [],
+      };
+    }
+  };
+
   return (
     <DataContext.Provider
       value={{
         data,
         authMode,
         isGoogleDirectEnabled,
+        isGeminiEnabled,
         isAuthLoading,
         signInWithGoogle,
         signInWithPassword,
@@ -649,6 +815,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         login,
         logout,
         updateData,
+        logStudySession,
+        askGeminiAssistant,
+        planTomorrowStudySchedule,
+        fetchUpcomingCalendarEvents,
       }}
     >
       {children}

@@ -3,13 +3,13 @@ import { useData } from '../context/DataContext';
 import type { Subject } from '../context/DataContext';
 import './SubjectsList.css';
 
-const CircularProgress: React.FC<{ progress: number, color: string, onClick: () => void }> = ({ progress, color, onClick }) => {
+const CircularProgress: React.FC<{ progress: number, color: string, label: string, onClick: () => void }> = ({ progress, color, label, onClick }) => {
   const radius = 20;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
   return (
-    <div className="progress-ring-container" onClick={onClick}>
+    <button type="button" className="progress-ring-container" onClick={onClick} aria-label={label}>
       <svg height="50" width="50" className="subject-progress-ring">
         <circle
           className="subject-progress-ring-circle-bg"
@@ -33,12 +33,12 @@ const CircularProgress: React.FC<{ progress: number, color: string, onClick: () 
         />
       </svg>
       <div className="progress-text">{progress}%</div>
-    </div>
+    </button>
   );
 };
 
 const SubjectsList: React.FC = () => {
-  const { data, updateData } = useData();
+  const { data, updateData, logStudySession } = useData();
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
   const [newSubjectName, setNewSubjectName] = useState('');
   const [newSubjectTargetHours, setNewSubjectTargetHours] = useState('40');
@@ -88,37 +88,24 @@ const SubjectsList: React.FC = () => {
     };
   };
 
-  const updateSubject = (subjectId: string, mapper: (subject: Subject) => Subject) => {
-    const updatedSubjects = data.subjects.map(subject => {
-      if (subject.id !== subjectId) {
-        return subject;
-      }
-
-      return deriveSubject(mapper(subject));
-    });
-
-    updateData({ subjects: updatedSubjects });
-  };
-
-  const setTodayHoursForSubject = (subjectId: string) => {
+  const setTodayHoursForSubject = async (subjectId: string) => {
     const parsed = Number(todayHoursInput);
     if (!Number.isFinite(parsed) || parsed < 0) {
       return;
     }
 
     const boundedHours = Number(Math.min(parsed, 24).toFixed(1));
-    updateSubject(subjectId, subject => {
-      const nextDailyHours = { ...subject.dailyHours };
-      if (boundedHours <= 0) {
-        delete nextDailyHours[todayKey];
-      } else {
-        nextDailyHours[todayKey] = boundedHours;
-      }
+    const subject = data.subjects.find(item => item.id === subjectId);
+    if (!subject) {
+      return;
+    }
 
-      return {
-        ...subject,
-        dailyHours: nextDailyHours,
-      };
+    await logStudySession({
+      source: 'subject',
+      dateKey: todayKey,
+      hours: boundedHours,
+      subjectId,
+      subjectName: subject.name,
     });
   };
 
@@ -232,7 +219,7 @@ const SubjectsList: React.FC = () => {
             value={newSubjectTargetHours}
             onChange={(e) => setNewSubjectTargetHours(e.target.value)}
           />
-          <button className="widget-btn" onClick={addSubject}>Add</button>
+          <button type="button" className="widget-btn" onClick={addSubject}>Add</button>
         </div>
 
         {data.subjects.length === 0 && (
@@ -245,6 +232,7 @@ const SubjectsList: React.FC = () => {
               <CircularProgress 
                 progress={subject.progress} 
                 color={subject.color} 
+                label={`Open ${subject.name} study details`} 
                 onClick={() => setSelectedSubjectId(subject.id)} 
               />
               <div className="subject-info">
@@ -256,10 +244,10 @@ const SubjectsList: React.FC = () => {
                   {subject.status}
                 </div>
                 <div className="subject-actions">
-                  <button type="button" className="widget-btn mini" onClick={() => moveSubject(subject.id, -1)}>↑</button>
-                  <button type="button" className="widget-btn mini" onClick={() => moveSubject(subject.id, 1)}>↓</button>
-                  <button type="button" className="widget-btn mini" onClick={() => editSubject(subject.id)}>edit</button>
-                  <button type="button" className="widget-btn mini danger" onClick={() => deleteSubject(subject.id)}>del</button>
+                  <button type="button" className="widget-btn mini" aria-label={`Move ${subject.name} up`} onClick={() => moveSubject(subject.id, -1)}>↑</button>
+                  <button type="button" className="widget-btn mini" aria-label={`Move ${subject.name} down`} onClick={() => moveSubject(subject.id, 1)}>↓</button>
+                  <button type="button" className="widget-btn mini" aria-label={`Edit ${subject.name}`} onClick={() => editSubject(subject.id)}>edit</button>
+                  <button type="button" className="widget-btn mini danger" aria-label={`Delete ${subject.name}`} onClick={() => deleteSubject(subject.id)}>del</button>
                 </div>
               </div>
             </div>
@@ -273,7 +261,7 @@ const SubjectsList: React.FC = () => {
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>{selectedSubject.name} - Subject Heatmap</h3>
-              <button className="close-btn" onClick={() => setSelectedSubjectId(null)}>×</button>
+              <button type="button" className="close-btn" aria-label="Close subject details" onClick={() => setSelectedSubjectId(null)}>×</button>
             </div>
             <div className="modal-body">
               <p>Set today's study hours and review your last 16 weeks for {selectedSubject.name}.</p>
@@ -289,7 +277,7 @@ const SubjectsList: React.FC = () => {
                   value={todayHoursInput}
                   onChange={(e) => setTodayHoursInput(e.target.value)}
                 />
-                <button className="widget-btn" onClick={() => setTodayHoursForSubject(selectedSubject.id)}>Save today</button>
+                <button type="button" className="widget-btn" onClick={() => setTodayHoursForSubject(selectedSubject.id)}>Save today</button>
               </div>
 
               <div className="subject-modal-stats">

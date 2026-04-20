@@ -1,235 +1,78 @@
-# 📚 Study Tracker
+# Tracklio
 
-> Track. Analyze. Improve your study consistency.
+Tracklio is a student productivity assistant that helps users track study time, spot weak subjects, get personalized AI guidance, and turn study intent into calendar plans.
 
----
+## Chosen Vertical
 
-## 🚀 Overview
+**Student Productivity Assistant**
 
-Study Tracker is a full-stack web application designed to help students monitor and improve their learning habits through powerful visualizations and structured tracking.
+## Tech Stack
 
-It provides a **GitHub-style heatmap**, **subject-wise progress tracking**, and **detailed analytics** to ensure consistency and productivity.
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- Supabase
+- Gemini API
+- Google Calendar API
 
----
+## What Tracklio Does
 
-## 🗄️ Supabase Progress Persistence (Tracklio)
+- GitHub-style study heatmap for daily study activity
+- Subject tracking with progress, targets, and completion status
+- Study insights for streaks, weekly totals, and subject trends
+- Gemini-powered study assistant with context-aware coaching
+- Google Calendar sync for study sessions and tomorrow planning
 
-Tracklio now supports saving progress to Supabase in addition to local browser storage.
+## Approach & Logic
 
-Email login uses Supabase Auth whenever Supabase env vars are configured.
-If `VITE_GOOGLE_CLIENT_ID` is set, direct Google OAuth is added as an extra sign-in option (not Supabase Google provider).
-The login page now includes:
+### Gemini AI Assistant
 
-- Sign In (email + password)
-- Sign Up (email + password)
-- Magic Link login
-- Password reset email
-- Google OAuth login (direct from Google)
+Tracklio builds a live study context from the user’s current data before every Gemini request. That context includes total hours, today’s hours, weekly hours, streaks, weak subjects, strong subjects, and recent activity patterns. The prompt builder injects this context into every request so Gemini can give personalized advice instead of generic study tips.
 
-### 1) Create env variables
+The assistant can:
 
-Copy values from `.env.example` into a local `.env` file:
+- identify weak subjects that need attention
+- generate motivational nudges when a streak is at risk
+- suggest realistic study blocks for tomorrow
+- answer study questions using the user’s actual study history
+
+### Google Calendar Integration
+
+When a user logs a study session, Tracklio creates or updates a matching Google Calendar event using the Google Calendar API. Logged sessions are stored with a stable Tracklio key so the app can sync them without duplicating entries.
+
+The “Plan Tomorrow” action asks Gemini for a structured schedule, converts that plan into calendar events, and syncs those events into Google Calendar. The dashboard also reads upcoming Tracklio calendar events back from Google Calendar and shows them inside the app.
+
+### Supabase Storage
+
+Supabase handles authentication and persistence. The app uses Supabase Auth for email/password, magic link, and session restoration. User progress is stored in the `user_progress` table as JSON payloads, so the dashboard can reload subjects, study logs, reminders, resources, and exam data across sessions.
+
+## Environment Variables
+
+Copy `.env.example` to `.env.local` and fill in your values.
 
 ```env
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+VITE_GOOGLE_CALENDAR_ID=primary
+VITE_GEMINI_API_KEY=your-gemini-api-key
+VITE_GEMINI_MODEL=gemini-1.5-flash
 ```
 
-### 2) Create the table in Supabase SQL editor
-
-Run the SQL in `supabase/user_progress.sql`.
-
-### 3) Enable email auth in Supabase
-
-- Go to Supabase Dashboard -> Authentication -> Providers -> Email.
-- Enable Email provider.
-- Keep "Confirm email" enabled for magic link flow.
-
-### 4) Enable Direct Google OAuth (Google Cloud Console)
-
-1. Open Google Cloud Console -> APIs & Services -> Credentials.
-2. Create OAuth Client ID of type Web application.
-3. Add your app origins in Google console:
-        - `http://localhost:5173` for local development
-        - your production domain
-4. Copy Google Client ID.
-5. Add `VITE_GOOGLE_CLIENT_ID` in your `.env.local` file.
-
-Note: Direct Google OAuth in this frontend-only setup does not create a Supabase auth session.
-
-### 5) Run the app
+## Local Setup
 
 ```bash
 npm install
 npm run dev
 ```
 
-### Behavior
-
-- If Supabase env vars are set, progress is loaded on login and saved automatically on data changes.
-- If Supabase is not configured, Tracklio keeps using localStorage only.
-- Progress rows are scoped to the authenticated email via RLS policies.
-
----
-
-## ✨ Features
-
-### 📊 Visualization
-
-* 🔥 GitHub-style heatmap for daily study activity
-* 📈 Weekly, Monthly, and Yearly progress analytics
-* 🎯 Circular progress bars for each subject
-
-### 📘 Study Management
-
-* ✅ Daily study tracking using checkbox system
-* 📚 Add and manage multiple subjects
-* 📝 Notes and important links section
-
-### 🔐 Authentication
-
-* Secure user login/signup
-* Persistent data storage
-
-### ⚡ User Experience
-
-* Clean and responsive UI
-* Fast and interactive dashboard
-
----
-
-## 🏗️ Tech Stack
-
-### Frontend
-
-* React / Next.js
-* Tailwind CSS
-* Recharts / Chart.js
-
-### Backend
-
-* Node.js
-* Express.js
-
-### Database
-
-* MongoDB
-
-### Authentication
-
-* JWT / Firebase Auth
-
----
-
-## 🧩 System Architecture
-
-```
-Frontend (React / Next.js)
-        ↓
-API Layer (Node.js / Express)
-        ↓
-Database (MongoDB)
-        ↓
-Authentication (JWT / Firebase)
-```
-
----
-
----
-
-## ⚙️ Installation & Setup
-
-### 1️⃣ Clone the repository
+## Tests
 
 ```bash
-git clone https://github.com/your-username/study-tracker.git
-cd study-tracker
+npm run test
 ```
 
-### 2️⃣ Install dependencies
+## Supabase Schema
 
-#### Frontend
-
-```bash
-cd client
-npm install
-```
-
-#### Backend
-
-```bash
-cd server
-npm install
-```
-
-### 3️⃣ Environment Variables
-
-Create a `.env` file in server folder:
-
-```env
-MONGO_URI=your_mongodb_uri
-JWT_SECRET=your_secret_key
-```
-
-### 4️⃣ Run the application
-
-```bash
-# backend
-npm run server
-
-# frontend
-npm run dev
-```
-
----
-
-## 📂 Folder Structure
-
-```
-study-tracker/
-│── client/         # Frontend
-│── server/         # Backend
-│── screenshots/    # Images
-│── README.md
-```
-
----
-
-## 🚧 Future Improvements
-
-* ⏱️ Study timer integration
-* 🔔 Reminder notifications
-* 📱 Progressive Web App (PWA)
-* 📊 Advanced analytics (AI-based suggestions)
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome!
-
-1. Fork the repo
-2. Create a new branch
-3. Commit changes
-4. Open a Pull Request
-
----
-
-## 📜 License
-
-This project is licensed under the MIT License.
-
----
-
-## 👨‍💻 Author
-
-**Mradul Gupta**
-
-* GitHub: [https://github.com/IamMradul](https://github.com/IamMradul)
-* LeetCode: [https://leetcode.com/u/Mradul_mg/](https://leetcode.com/u/Mradul_mg/)
-
----
-
-## ⭐ Show your support
-
-If you like this project, consider giving it a ⭐ on GitHub!
+Run `supabase/user_progress.sql` in the Supabase SQL editor.
