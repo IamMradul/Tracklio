@@ -508,7 +508,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       requestAuthPrompt('Sign in to save study changes.');
       return { ok: false, message: 'Sign in to save study changes.' };
     }
-    setData(prev => normalizeAppData(applyStudySessionLog(prev, session)));
+
+    setData(prev => {
+      const nextData = normalizeAppData(applyStudySessionLog(prev, session));
+      
+      // If we are adding hours (not clearing), also record a detailed session log for analytics
+      if (session.hours > 0) {
+        const newLog: SessionLog = {
+          id: crypto.randomUUID(),
+          subjectId: session.subjectId,
+          subjectName: session.subjectName,
+          startTime: new Date().toISOString(),
+          durationMinutes: Math.round(session.hours * 60),
+          quality: 4, // Default to 'Good' for manual logs
+        };
+        nextData.sessionLogs = [newLog, ...nextData.sessionLogs].slice(0, 1000); // Keep last 1000 logs
+      }
+
+      return nextData;
+    });
+
     return {
       ok: true,
       message: session.hours <= 0 ? 'Study session cleared.' : 'Study session logged.',

@@ -48,13 +48,7 @@ const AnalyticsDashboard: React.FC = () => {
   // 2. Subject Distribution Data
   const distributionData = useMemo(() => {
     if (data.subjects.length === 0) {
-      // Mock data if empty
-      return [
-        { name: 'Maths', value: 35, hours: 12.5, color: '#5f8dff' },
-        { name: 'Physics', value: 25, hours: 8.2, color: '#4fd5ff' },
-        { name: 'Chemistry', value: 20, hours: 6.8, color: '#18d5b6' },
-        { name: 'English', value: 20, hours: 6.8, color: '#f5a623' },
-      ];
+      return [];
     }
     const total = data.subjects.reduce((sum, s) => sum + s.totalHours, 0) || 1;
     return data.subjects.map(s => ({
@@ -62,7 +56,7 @@ const AnalyticsDashboard: React.FC = () => {
       value: Math.round((s.totalHours / total) * 100),
       hours: s.totalHours,
       color: s.color,
-    })).sort((a, b) => b.value - a.value);
+    })).filter(s => s.hours > 0).sort((a, b) => b.value - a.value);
   }, [data.subjects]);
 
   // 3. Time of Day Data (Mocked if sessionLogs empty)
@@ -79,26 +73,30 @@ const AnalyticsDashboard: React.FC = () => {
           return h >= hour && h < hour + 2;
         }).reduce((sum, s) => sum + s.durationMinutes, 0);
       } else {
-        // Mock pattern: peak in afternoon
-        const mockPatterns: Record<number, number> = { 0: 20, 2: 5, 4: 0, 6: 40, 8: 120, 10: 200, 12: 350, 14: 480, 16: 420, 18: 380, 20: 310, 22: 150 };
-        count = mockPatterns[hour] || 0;
+        // Fallback: If no session logs, but we have activityData, distribute activityData slightly
+        // for "Time of Day" to not look empty, but only for today
+        const todayKey = new Date().toISOString().split('T')[0];
+        const todayHours = data.activityData[todayKey] || 0;
+        if (todayHours > 0 && hour >= 10 && hour <= 18) {
+          count = (todayHours * 60) / 5; // Split today's hours across typical study window
+        }
       }
 
       return { label, count };
     });
     return hourly;
-  }, [data.sessionLogs]);
+  }, [data.sessionLogs, data.activityData]);
 
   // 4. Session Quality Data
   const qualityData = useMemo(() => {
     const ratings = ['Very Poor', 'Poor', 'Average', 'Good', 'Excellent'];
     if (data.sessionLogs.length === 0) {
-      return ratings.map((name, i) => ({ name, value: [10, 15, 30, 25, 20][i] }));
+      return [];
     }
     return ratings.map((name, i) => {
       const count = data.sessionLogs.filter(s => s.quality === i + 1).length;
       return { name, value: count };
-    });
+    }).filter(q => q.value > 0);
   }, [data.sessionLogs]);
 
   // 5. Weekly Patterns (Radar)
@@ -114,7 +112,7 @@ const AnalyticsDashboard: React.FC = () => {
         const key = d.toISOString().split('T')[0];
         intensity += data.activityData[key] || 0;
       }
-      return { subject: day, A: Math.round((intensity / count) * 60) || Math.floor(Math.random() * 500) + 100 };
+      return { subject: day, A: Math.round((intensity / count) * 60) };
     });
   }, [data.activityData]);
 
