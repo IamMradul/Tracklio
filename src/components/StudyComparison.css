@@ -12,9 +12,9 @@
 }
 
 .toggle-btn {
-  background-color: rgba(12, 28, 67, 0.76);
-  color: #8ea2d8;
-  border: 1px solid rgba(125, 152, 233, 0.26);
+  background-color: var(--bg-input);
+  color: var(--text-muted);
+  border: 1px solid var(--border-soft);
   padding: 7px 14px;
   font-size: 0.7rem;
   text-transform: uppercase;
@@ -36,9 +36,14 @@
 
 .toggle-btn.active {
   background: linear-gradient(120deg, rgba(91, 129, 255, 0.35), rgba(67, 200, 255, 0.15));
-  color: #e9f2ff;
+  color: var(--text-heading);
   position: relative;
   z-index: 1;
+}
+
+[data-theme="light"] .toggle-btn.active {
+  background: var(--bg-secondary);
+  color: var(--accent-blue);
 }
 
 .bars-container {
@@ -56,14 +61,14 @@
 
 .bar-label {
   width: 40px;
-  color: #8ba0d6;
+  color: var(--text-muted);
   text-align: right;
 }
 
 .bar-track {
   flex: 1;
   height: 12px;
-  background-color: #2b3a60;
+  background-color: var(--bg-ring-track);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -77,6 +82,6 @@
 
 .bar-value {
   width: 38px;
-  color: #d9e7ff;
+  color: var(--text-muted);
   text-align: left;
 }

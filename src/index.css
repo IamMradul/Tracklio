@@ -43,6 +43,7 @@
   /* Chart colors (exposed for JS) */
   --chart-grid:    rgba(122,147,255,0.12);
   --chart-label:   #97a8d5;
+  --bg-ring-track: rgba(59, 77, 136, 0.4);
 }
 
 /* ─── Light theme ────────────────────────────────────────────────── */
@@ -78,6 +79,7 @@
 
   --chart-grid:    rgba(58,106,244,0.1);
   --chart-label:   #5a6a9a;
+  --bg-ring-track: rgba(58, 106, 244, 0.12);
 }
 
 /* ─── Global transitions for theme switching ─────────────────────── */

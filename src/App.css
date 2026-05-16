@@ -94,6 +94,11 @@
   box-shadow: 0 0 0 1px rgba(137, 173, 255, 0.22) inset;
 }
 
+[data-theme="light"] .nav-pill.active {
+  background: var(--bg-secondary);
+  box-shadow: 0 0 0 1px var(--border-soft) inset;
+}
+
 .nav-pill:hover:not(.active) {
   color: var(--text-main);
 }
@@ -125,16 +130,21 @@
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #7f9dff, #21316e);
-  color: #f7f9ff;
+  background: radial-gradient(circle at 30% 30%, var(--accent-blue), var(--bg-nav));
+  color: var(--text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
   font-size: 0.78rem;
-  border: 1px solid rgba(131, 156, 255, 0.6);
-  box-shadow: 0 10px 24px rgba(21, 35, 95, 0.4);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-card);
   flex-shrink: 0;
+}
+
+[data-theme="light"] .profile-avatar {
+  color: #fff;
+  background: var(--accent-blue);
 }
 
 .profile-button {

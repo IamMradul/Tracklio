@@ -10,10 +10,10 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  border: 1px solid rgba(128, 152, 234, 0.18);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 12px 14px;
-  background: rgba(11, 27, 64, 0.62);
+  background: var(--bg-input);
 }
 
 .heatmap-log-label {
@@ -21,12 +21,12 @@
   font-size: 0.68rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #89a0d8;
+  color: var(--text-muted);
   margin-bottom: 4px;
 }
 
 .heatmap-log-value {
-  color: #edf4ff;
+  color: var(--text-heading);
   font-size: 1rem;
 }
 
@@ -38,11 +38,11 @@
 
 .heatmap-hours-input {
   width: 92px;
-  background: rgba(13, 27, 67, 0.8);
-  border: 1px solid rgba(120, 148, 235, 0.28);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
   padding: 8px 10px;
-  color: #deebff;
+  color: var(--text-main);
 }
 
 .heatmap-hours-input::-webkit-outer-spin-button,
@@ -76,9 +76,9 @@
   display: flex;
   gap: 6px;
   padding: 12px 10px;
-  border: 1px solid rgba(120, 145, 226, 0.16);
+  border: 1px solid var(--border-soft);
   border-radius: 14px;
-  background: linear-gradient(180deg, rgba(10, 26, 60, 0.72), rgba(8, 21, 54, 0.75));
+  background: var(--bg-card);
   overflow: hidden;
   width: 100%;
   justify-content: space-between;
@@ -91,12 +91,12 @@
   flex-wrap: wrap;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(120, 145, 226, 0.16);
-  background: rgba(10, 24, 58, 0.62);
+  border: 1px solid var(--border-soft);
+  background: var(--bg-input);
 }
 
 .heatmap-selection-label {
-  color: #8ea1d4;
+  color: var(--text-muted);
   font-size: 0.68rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -110,13 +110,15 @@
   gap: 6px;
   padding: 7px 4px 5px;
   border-radius: 10px;
-  background: rgba(11, 24, 56, 0.45);
+  background: var(--bg-primary);
   border: 1px solid transparent;
+  opacity: 0.85;
 }
 
 .month-block.current-month {
-  border-color: rgba(129, 171, 255, 0.5);
-  background: rgba(18, 36, 80, 0.55);
+  border-color: var(--accent-blue);
+  background: var(--bg-secondary);
+  opacity: 1;
 }
 
 .month-dot-grid {
@@ -135,7 +137,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #2b3b5f;
+  background: var(--border-soft);
 }
 
 .month-dot-button {
@@ -158,25 +160,16 @@
   box-shadow: none;
 }
 
-.bucket-0 {
-  background: #2b3b5f;
-}
+.bucket-0 { background: var(--border-soft); }
+.bucket-1 { background: #3d7a6e; }
+.bucket-2 { background: #53a485; }
+.bucket-3 { background: #70c596; }
+.bucket-4 { background: #8fe6ad; }
 
-.bucket-1 {
-  background: #3d7a6e;
-}
-
-.bucket-2 {
-  background: #53a485;
-}
-
-.bucket-3 {
-  background: #70c596;
-}
-
-.bucket-4 {
-  background: #8fe6ad;
-}
+[data-theme="light"] .bucket-1 { background: #40bfa0; }
+[data-theme="light"] .bucket-2 { background: #34d3a4; }
+[data-theme="light"] .bucket-3 { background: #10b981; }
+[data-theme="light"] .bucket-4 { background: #059669; }
 
 .month-dot-button.bucket-0,
 .month-dot-button.bucket-1,
@@ -194,14 +187,14 @@
 }
 
 .month-meta strong {
-  color: #cfe0ff;
+  color: var(--text-heading);
   font-size: 0.58rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .month-meta small {
-  color: #7f95ca;
+  color: var(--text-muted);
   font-size: 0.54rem;
 }
 
@@ -211,7 +204,7 @@
   justify-content: flex-end;
   gap: 6px;
   font-size: 0.66rem;
-  color: #8da2d6;
+  color: var(--text-muted);
 }
 
 .legend-dot {

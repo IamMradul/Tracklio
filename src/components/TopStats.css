@@ -29,8 +29,8 @@
 .progress-primary {
   display: flex;
   flex-direction: column;
-  background: linear-gradient(160deg, rgba(17, 35, 85, 0.7), rgba(13, 25, 62, 0.65));
-  border: 1px solid rgba(134, 161, 255, 0.18);
+  background: var(--bg-input);
+  border: 1px solid var(--border-soft);
   border-radius: var(--border-radius-md);
   padding: 16px;
 }
@@ -42,7 +42,7 @@
   margin: 2px auto 10px;
   display: grid;
   place-items: center;
-  background: conic-gradient(from 90deg, #6d8fff 0 312deg, rgba(59, 77, 136, 0.6) 312deg 360deg);
+  background: conic-gradient(from 90deg, #6d8fff 0 312deg, var(--bg-ring-track) 312deg 360deg);
   position: relative;
 }
 
@@ -51,8 +51,8 @@
   position: absolute;
   inset: 13px;
   border-radius: 50%;
-  background: #0d1b45;
-  border: 1px solid rgba(160, 185, 255, 0.26);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-soft);
 }
 
 .ring-center {
@@ -65,17 +65,17 @@
 
 .ring-center strong {
   font-size: 1.48rem;
-  color: #f2f7ff;
+  color: var(--text-heading);
 }
 
 .ring-center small {
-  color: #92a3cf;
+  color: var(--text-muted);
   font-size: 0.72rem;
 }
 
 .progress-primary-label {
   text-align: center;
-  color: #a5b7e4;
+  color: var(--text-muted);
   font-size: 0.78rem;
   margin-bottom: 10px;
 }
@@ -89,8 +89,8 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.78rem;
-  color: #9cb0e6;
-  border-bottom: 1px solid rgba(130, 153, 223, 0.18);
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-soft);
   padding-bottom: 6px;
 }
 
@@ -100,7 +100,7 @@
 }
 
 .progress-metrics strong {
-  color: #dce7ff;
+  color: var(--text-heading);
 }
 
 .progress-secondary {
@@ -112,26 +112,26 @@
 .mini-stat-card {
   padding: 14px;
   border-radius: 12px;
-  border: 1px solid rgba(120, 144, 224, 0.2);
-  background: rgba(11, 25, 58, 0.75);
+  border: 1px solid var(--border-soft);
+  background: var(--bg-primary);
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
 .mini-stat-card span {
-  color: #91a3d3;
+  color: var(--text-muted);
   font-size: 0.72rem;
 }
 
 .mini-stat-card strong {
-  color: #ebf2ff;
+  color: var(--text-heading);
   font-size: 1.3rem;
   line-height: 1.2;
 }
 
 .mini-stat-card small {
-  color: #6ee3c5;
+  color: var(--accent-teal);
   font-size: 0.7rem;
 }
 
@@ -161,7 +161,7 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.65rem;
-  color: #89a0d8;
+  color: var(--text-muted);
 }
 
 @media (max-width: 920px) {

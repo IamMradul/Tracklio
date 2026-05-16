@@ -43,7 +43,7 @@ const TopStats: React.FC = () => {
 
       <div className="progress-layout">
         <div className="progress-primary">
-          <div className="progress-ring" style={{ background: `conic-gradient(from 90deg, #6d8fff 0 ${ringPercent * 3.6}deg, rgba(59, 77, 136, 0.6) ${ringPercent * 3.6}deg 360deg)` }}>
+          <div className="progress-ring" style={{ background: `conic-gradient(from 90deg, #6d8fff 0 ${ringPercent * 3.6}deg, var(--bg-ring-track) ${ringPercent * 3.6}deg 360deg)` }}>
             <div className="ring-center">
               <strong>{todayHours.toFixed(1)}h</strong>
               <small>of 9h goal</small>
