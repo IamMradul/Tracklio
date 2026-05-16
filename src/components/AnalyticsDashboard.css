@@ -9,15 +9,19 @@
 }
 
 .analytics-card {
-  background: #0d0d0d;
-  border: 1px solid rgba(245, 166, 35, 0.1);
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
   border-radius: 18px;
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-card);
   transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+[data-theme="light"] .analytics-card {
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .analytics-card:hover {
@@ -34,7 +38,7 @@
 .card-header h3 {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-heading);
   letter-spacing: 0.02em;
   margin: 0;
   border-left: 3px solid #f5a623;
@@ -49,15 +53,16 @@
 /* Toggle Group Mini */
 .toggle-group-mini {
   display: flex;
-  background: #1a1a1a;
+  background: var(--bg-primary);
   border-radius: 8px;
   padding: 2px;
+  border: 1px solid var(--border-soft);
 }
 
 .toggle-group-mini button {
   background: transparent;
   border: none;
-  color: #666;
+  color: var(--text-muted);
   padding: 6px 10px;
   border-radius: 6px;
   cursor: pointer;
@@ -103,7 +108,7 @@
 
 .total-label {
   font-size: 0.65rem;
-  color: #666;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
@@ -111,7 +116,7 @@
 .total-value {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-heading);
 }
 
 .donut-legend {
@@ -136,11 +141,11 @@
 }
 
 .legend-name {
-  color: #aaa;
+  color: var(--text-muted);
 }
 
 .legend-value {
-  color: #eee;
+  color: var(--text-main);
   font-weight: 500;
 }
 
@@ -173,11 +178,15 @@
 
 .q-legend-stars {
   letter-spacing: -2px;
-  filter: grayscale(1) brightness(2);
+  filter: grayscale(1) brightness(1.5);
+}
+
+[data-theme="light"] .q-legend-stars {
+  filter: grayscale(0.2) contrast(0.8);
 }
 
 .q-legend-label {
-  color: #888;
+  color: var(--text-muted);
   font-weight: 600;
 }
 

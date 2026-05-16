@@ -29,6 +29,27 @@ const QUALITY_COLORS = ['#ff5f74', '#ffad4c', '#f5cc23', '#86ebb0', '#18d5b6']; 
 const AnalyticsDashboard: React.FC = () => {
   const { data } = useData();
   const [trendsView, setTrendsView] = useState<'line' | 'bar'>('line');
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+  React.useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const currentTheme = document.documentElement.getAttribute('data-theme') as 'light' | 'dark' || 'dark';
+      setTheme(currentTheme);
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    setTheme(document.documentElement.getAttribute('data-theme') as 'light' | 'dark' || 'dark');
+    return () => observer.disconnect();
+  }, []);
+
+  const chartColors = {
+    grid: theme === 'light' ? 'rgba(0,0,0,0.05)' : '#222',
+    axis: theme === 'light' ? '#888' : '#555',
+    tooltipBg: theme === 'light' ? '#fff' : '#111',
+    tooltipBorder: theme === 'light' ? '#eee' : '#333',
+    polarGrid: theme === 'light' ? '#eee' : '#333',
+    polarAngle: theme === 'light' ? '#666' : '#777',
+    polarRadius: theme === 'light' ? '#ccc' : '#444',
+  };
 
   // 1. Focus Trends Data (Last 14 days)
   const trendsData = useMemo(() => {
@@ -149,23 +170,23 @@ const AnalyticsDashboard: React.FC = () => {
                       <stop offset="95%" stopColor={AMBER} stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                  <XAxis dataKey="date" stroke="#555" fontSize={10} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#555" fontSize={10} tickLine={false} axisLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                  <XAxis dataKey="date" stroke={chartColors.axis} fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis stroke={chartColors.axis} fontSize={10} tickLine={false} axisLine={false} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px', fontSize: '12px' }}
+                    contentStyle={{ backgroundColor: chartColors.tooltipBg, border: `1px solid ${chartColors.tooltipBorder}`, borderRadius: '8px', fontSize: '12px' }}
                     itemStyle={{ color: AMBER }}
                   />
                   <Area type="monotone" dataKey="minutes" stroke={AMBER} fillOpacity={1} fill="url(#colorAmber)" strokeWidth={3} />
                 </AreaChart>
               ) : (
                 <BarChart data={trendsData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                  <XAxis dataKey="date" stroke="#555" fontSize={10} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#555" fontSize={10} tickLine={false} axisLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                  <XAxis dataKey="date" stroke={chartColors.axis} fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis stroke={chartColors.axis} fontSize={10} tickLine={false} axisLine={false} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px', fontSize: '12px' }}
-                    cursor={{ fill: 'rgba(245, 166, 35, 0.05)' }}
+                    contentStyle={{ backgroundColor: chartColors.tooltipBg, border: `1px solid ${chartColors.tooltipBorder}`, borderRadius: '8px', fontSize: '12px' }}
+                    cursor={{ fill: theme === 'light' ? 'rgba(0,0,0,0.02)' : 'rgba(245, 166, 35, 0.05)' }}
                   />
                   <Bar dataKey="minutes" fill={AMBER} radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -226,12 +247,12 @@ const AnalyticsDashboard: React.FC = () => {
           <div className="chart-container">
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={timeOfDayData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                <XAxis dataKey="label" stroke="#555" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="#555" fontSize={10} tickLine={false} axisLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                <XAxis dataKey="label" stroke={chartColors.axis} fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis stroke={chartColors.axis} fontSize={10} tickLine={false} axisLine={false} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px', fontSize: '12px' }}
-                  cursor={{ fill: 'rgba(95, 141, 255, 0.05)' }}
+                  contentStyle={{ backgroundColor: chartColors.tooltipBg, border: `1px solid ${chartColors.tooltipBorder}`, borderRadius: '8px', fontSize: '12px' }}
+                  cursor={{ fill: theme === 'light' ? 'rgba(0,0,0,0.02)' : 'rgba(95, 141, 255, 0.05)' }}
                 />
                 <Bar dataKey="count" fill={BLUE} radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -259,7 +280,7 @@ const AnalyticsDashboard: React.FC = () => {
                     <Cell key={`cell-${index}`} fill={QUALITY_COLORS[index]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip contentStyle={{ backgroundColor: chartColors.tooltipBg, border: `1px solid ${chartColors.tooltipBorder}`, borderRadius: '8px' }} />
               </PieChart>
             </ResponsiveContainer>
             <div className="quality-legend">
@@ -282,9 +303,9 @@ const AnalyticsDashboard: React.FC = () => {
           <div className="chart-container">
             <ResponsiveContainer width="100%" height={260}>
               <RadarChart cx="50%" cy="50%" outerRadius="80%" data={weeklyPatterns}>
-                <PolarGrid stroke="#333" />
-                <PolarAngleAxis dataKey="subject" stroke="#777" fontSize={11} />
-                <PolarRadiusAxis angle={30} domain={[0, 600]} stroke="#444" fontSize={10} />
+                <PolarGrid stroke={chartColors.polarGrid} />
+                <PolarAngleAxis dataKey="subject" stroke={chartColors.polarAngle} fontSize={11} />
+                <PolarRadiusAxis angle={30} domain={[0, 600]} stroke={chartColors.polarRadius} fontSize={10} />
                 <Radar
                   name="Minutes"
                   dataKey="A"
@@ -292,7 +313,7 @@ const AnalyticsDashboard: React.FC = () => {
                   fill={AMBER}
                   fillOpacity={0.4}
                 />
-                <Tooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #333' }} />
+                <Tooltip contentStyle={{ backgroundColor: chartColors.tooltipBg, border: `1px solid ${chartColors.tooltipBorder}` }} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
