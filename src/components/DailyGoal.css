@@ -17,16 +17,11 @@
   font-weight: 500;
 }
 
-.dg-goal-display {
-  background: none;
-  border: 1px dashed var(--border-soft);
-  border-radius: 6px;
+.dg-goal-value {
   color: var(--accent-blue);
   font-size: 0.8rem;
-  font-weight: 600;
-  padding: 3px 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  font-weight: 700;
+  padding: 3px 0;
 }
 
 .dg-goal-display:hover {

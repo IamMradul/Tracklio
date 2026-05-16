@@ -7,13 +7,13 @@ import './PomodoroWidget.css';
 type PomodoroMode = 'work' | 'short' | 'long';
 
 const MODE_CONFIG: Record<PomodoroMode, { label: string; duration: number; color: string }> = {
-  work:  { label: 'Focus',        duration: 25 * 60, color: '#5f8dff' },
-  short: { label: 'Short Break',  duration:  5 * 60, color: '#35d6b5' },
-  long:  { label: 'Long Break',   duration: 15 * 60, color: '#ffad4c' },
+  work: { label: 'Focus', duration: 25 * 60, color: '#5f8dff' },
+  short: { label: 'Short Break', duration: 5 * 60, color: '#35d6b5' },
+  long: { label: 'Long Break', duration: 15 * 60, color: '#ffad4c' },
 };
 
 const RING_RADIUS = 54;
-const RING_CIRC   = 2 * Math.PI * RING_RADIUS;
+const RING_CIRC = 2 * Math.PI * RING_RADIUS;
 
 /**
  * Requests browser notification permission on first use.
@@ -38,21 +38,43 @@ const sendNotification = (title: string, body: string) => {
 
 /**
  * Pomodoro — full-featured Pomodoro timer widget.
- * - Modes: Work (25m), Short Break (5m), Long Break (15m)
- * - Circular SVG progress ring
- * - Controls: Start/Pause, Reset, Skip
- * - Browser notification on session end
- * - Auto-logs completed focus sessions (+0.42h) to activityData
  */
 export const Pomodoro: React.FC = () => {
-  const { logStudySession } = useData();
+  const { data, updateData, logStudySession } = useData();
+  const { pomodoroSettings } = data;
+
   const [mode, setMode] = useState<PomodoroMode>('work');
-  const [timeLeft, setTimeLeft] = useState(MODE_CONFIG.work.duration);
   const [isActive, setIsActive] = useState(false);
   const [completedPomodoros, setCompletedPomodoros] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Local state for settings form
+  const [tempSettings, setTempSettings] = useState(pomodoroSettings);
+
+  const getDuration = useCallback((m: PomodoroMode) => {
+    switch (m) {
+      case 'work': return pomodoroSettings.workDuration * 60;
+      case 'short': return pomodoroSettings.shortBreakDuration * 60;
+      case 'long': return pomodoroSettings.longBreakDuration * 60;
+    }
+  }, [pomodoroSettings]);
+
+  const [timeLeft, setTimeLeft] = useState(getDuration('work'));
   const notifRequested = useRef(false);
 
-  const config = MODE_CONFIG[mode];
+  // Sync timeLeft if settings change and timer is NOT active
+  useEffect(() => {
+    if (!isActive) {
+      setTimeLeft(getDuration(mode));
+    }
+  }, [getDuration, mode, isActive]);
+
+  const config = {
+    work: { label: 'Focus', duration: pomodoroSettings.workDuration * 60, color: '#5f8dff' },
+    short: { label: 'Short Break', duration: pomodoroSettings.shortBreakDuration * 60, color: '#35d6b5' },
+    long: { label: 'Long Break', duration: pomodoroSettings.longBreakDuration * 60, color: '#ffad4c' },
+  }[mode];
+
   const progress = timeLeft / config.duration;
   const dashOffset = RING_CIRC * progress;
 
@@ -60,8 +82,12 @@ export const Pomodoro: React.FC = () => {
   const switchMode = useCallback((nextMode: PomodoroMode) => {
     setIsActive(false);
     setMode(nextMode);
-    setTimeLeft(MODE_CONFIG[nextMode].duration);
-  }, []);
+    setTimeLeft({
+      work: pomodoroSettings.workDuration * 60,
+      short: pomodoroSettings.shortBreakDuration * 60,
+      long: pomodoroSettings.longBreakDuration * 60,
+    }[nextMode]);
+  }, [pomodoroSettings]);
 
   /** Called when a session timer reaches 0 */
   const onSessionEnd = useCallback(() => {
@@ -70,11 +96,11 @@ export const Pomodoro: React.FC = () => {
       setCompletedPomodoros(next);
       sendNotification('Focus session complete! 🎉', 'Great work. Time for a break.');
 
-      // Auto-log ~25 min = 0.42h to activityData
+      // Auto-log actual focus minutes to activityData
       void logStudySession({
         source: 'pomodoro',
         dateKey: toDateKey(new Date()),
-        hours: 0.42,
+        hours: Number((pomodoroSettings.workDuration / 60).toFixed(2)),
       });
 
       // Every 4 pomodoros → long break
@@ -83,7 +109,7 @@ export const Pomodoro: React.FC = () => {
       sendNotification('Break over! 💪', 'Ready for another focus session?');
       switchMode('work');
     }
-  }, [mode, completedPomodoros, logStudySession, switchMode]);
+  }, [mode, completedPomodoros, logStudySession, switchMode, pomodoroSettings.workDuration]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -119,99 +145,133 @@ export const Pomodoro: React.FC = () => {
     onSessionEnd();
   };
 
+  const saveSettings = () => {
+    updateData({ pomodoroSettings: tempSettings });
+    setIsEditing(false);
+  };
+
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
 
   return (
     <div className="card widget-card pomodoro-card">
-      <div className="card-title">Pomodoro Timer</div>
-
-      {/* Mode selector */}
-      <div className="pomodoro-modes" role="tablist" aria-label="Pomodoro mode">
-        {(Object.keys(MODE_CONFIG) as PomodoroMode[]).map(m => (
-          <button
-            key={m}
-            type="button"
-            role="tab"
-            aria-selected={mode === m}
-            className={`pomodoro-mode-btn ${mode === m ? 'active' : ''}`}
-            onClick={() => switchMode(m)}
-          >
-            {MODE_CONFIG[m].label}
-          </button>
-        ))}
+      <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        Pomodoro Timer
+        <button
+          type="button"
+          className="widget-btn mini"
+          onClick={() => {
+            setIsEditing(!isEditing);
+            if (!isEditing) setTempSettings(pomodoroSettings);
+          }}
+          aria-label="Pomodoro settings"
+        >
+          {isEditing ? '✕ Close' : '⚙ Edit'}
+        </button>
       </div>
 
-      {/* Circular ring */}
-      <div className="pomodoro-ring-wrap">
-        <svg className="pomodoro-ring no-transition" viewBox="0 0 120 120" width="140" height="140" aria-hidden="true">
-          {/* Track */}
-          <circle
-            cx="60" cy="60" r={RING_RADIUS}
-            fill="none"
-            stroke="var(--border-color)"
-            strokeWidth="8"
-          />
-          {/* Progress arc */}
-          <circle
-            cx="60" cy="60" r={RING_RADIUS}
-            fill="none"
-            stroke={config.color}
-            strokeWidth="8"
-            strokeLinecap="round"
-            strokeDasharray={RING_CIRC}
-            strokeDashoffset={dashOffset}
-            transform="rotate(-90 60 60)"
-            style={{ transition: isActive ? 'stroke-dashoffset 1s linear' : 'none' }}
-          />
-        </svg>
-
-        <div className="pomodoro-time-wrap">
-          <div className="pomodoro-time" style={{ color: config.color }}>
-            {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+      {isEditing ? (
+        <div className="pomodoro-settings-form">
+          <div className="dg-edit-row" style={{ flexDirection: 'column', gap: '12px', alignItems: 'stretch' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label style={{ fontSize: '0.75rem' }}>Focus (min)</label>
+              <input
+                type="number"
+                className="dg-edit-input"
+                value={tempSettings.workDuration}
+                onChange={e => setTempSettings({ ...tempSettings, workDuration: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label style={{ fontSize: '0.75rem' }}>Short Break (min)</label>
+              <input
+                type="number"
+                className="dg-edit-input"
+                value={tempSettings.shortBreakDuration}
+                onChange={e => setTempSettings({ ...tempSettings, shortBreakDuration: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label style={{ fontSize: '0.75rem' }}>Long Break (min)</label>
+              <input
+                type="number"
+                className="dg-edit-input"
+                value={tempSettings.longBreakDuration}
+                onChange={e => setTempSettings({ ...tempSettings, longBreakDuration: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+            <button type="button" className="widget-btn" onClick={saveSettings} style={{ marginTop: '8px' }}>Save Settings</button>
           </div>
-          <div className="pomodoro-mode-label">{config.label}</div>
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Mode selector */}
+          <div className="pomodoro-modes" role="tablist" aria-label="Pomodoro mode">
+            {(['work', 'short', 'long'] as PomodoroMode[]).map(m => (
+              <button
+                key={m}
+                type="button"
+                role="tab"
+                aria-selected={mode === m}
+                className={`pomodoro-mode-btn ${mode === m ? 'active' : ''}`}
+                onClick={() => switchMode(m)}
+              >
+                {{ work: 'Focus', short: 'Short', long: 'Long' }[m]}
+              </button>
+            ))}
+          </div>
 
-      {/* Controls */}
-      <div className="timer-controls">
-        <button
-          type="button"
-          className="widget-btn pomodoro-primary-btn"
-          style={{ borderColor: `${config.color}66`, color: config.color }}
-          onClick={handleStartPause}
-          aria-label={isActive ? 'Pause timer' : 'Start timer'}
-        >
-          {isActive ? '⏸ Pause' : '▶ Start'}
-        </button>
-        <button
-          type="button"
-          className="widget-btn"
-          onClick={handleReset}
-          aria-label="Reset timer"
-        >
-          ↺ Reset
-        </button>
-        <button
-          type="button"
-          className="widget-btn"
-          onClick={handleSkip}
-          aria-label="Skip to next session"
-        >
-          ⏭ Skip
-        </button>
-      </div>
+          {/* Circular ring */}
+          <div className="pomodoro-ring-wrap">
+            <svg className="pomodoro-ring no-transition" viewBox="0 0 120 120" width="140" height="140" aria-hidden="true">
+              <circle cx="60" cy="60" r={RING_RADIUS} fill="none" stroke="var(--border-color)" strokeWidth="8" />
+              <circle
+                cx="60" cy="60" r={RING_RADIUS}
+                fill="none"
+                stroke={config.color}
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeDasharray={RING_CIRC}
+                strokeDashoffset={dashOffset}
+                transform="rotate(-90 60 60)"
+                style={{ transition: isActive ? 'stroke-dashoffset 1s linear' : 'none' }}
+              />
+            </svg>
 
-      {/* Completed sessions dots */}
-      <div className="timer-dots" aria-label={`${completedPomodoros} focus sessions completed`}>
-        {Array.from({ length: 4 }, (_, i) => (
-          <span key={i} className={`dot ${i < completedPomodoros % 4 ? 'active' : ''}`} />
-        ))}
-      </div>
-      <div className="pomodoro-sessions-count">
-        {completedPomodoros} session{completedPomodoros !== 1 ? 's' : ''} completed today
-      </div>
+            <div className="pomodoro-time-wrap">
+              <div className="pomodoro-time" style={{ color: config.color }}>
+                {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+              </div>
+              <div className="pomodoro-mode-label">{config.label}</div>
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="timer-controls">
+            <button
+              type="button"
+              className="widget-btn pomodoro-primary-btn"
+              style={{ borderColor: `${config.color}66`, color: config.color }}
+              onClick={handleStartPause}
+              aria-label={isActive ? 'Pause timer' : 'Start timer'}
+            >
+              {isActive ? '⏸ Pause' : '▶ Start'}
+            </button>
+            <button type="button" className="widget-btn" onClick={handleReset} aria-label="Reset timer">↺ Reset</button>
+            <button type="button" className="widget-btn" onClick={handleSkip} aria-label="Skip to next session">⏭ Skip</button>
+          </div>
+
+          {/* Completed sessions dots */}
+          <div className="timer-dots" aria-label={`${completedPomodoros} focus sessions completed`}>
+            {Array.from({ length: 4 }, (_, i) => (
+              <span key={i} className={`dot ${i < completedPomodoros % 4 ? 'active' : ''}`} />
+            ))}
+          </div>
+          <div className="pomodoro-sessions-count">
+            {completedPomodoros} session{completedPomodoros !== 1 ? 's' : ''} completed today
+          </div>
+        </>
+      )}
     </div>
   );
 };
@@ -274,8 +334,8 @@ export const ExamCountdown: React.FC = () => {
       {exams.length === 0 && (
         <div className="empty-state">
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-            <rect x="8" y="6" width="32" height="36" rx="4" stroke="currentColor" strokeWidth="2"/>
-            <path d="M16 16h16M16 22h16M16 28h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <rect x="8" y="6" width="32" height="36" rx="4" stroke="currentColor" strokeWidth="2" />
+            <path d="M16 16h16M16 22h16M16 28h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
           <p>No exams added yet.</p>
         </div>
@@ -297,8 +357,8 @@ export const ExamCountdown: React.FC = () => {
             <div className="subject-actions">
               <button type="button" className="widget-btn mini" aria-label={`Move ${exam.title} up`} onClick={() => moveExam(exam.id, -1)}>↑</button>
               <button type="button" className="widget-btn mini" aria-label={`Move ${exam.title} down`} onClick={() => moveExam(exam.id, 1)}>↓</button>
-              <button type="button" className="widget-btn mini" aria-label={`Edit ${exam.title}`} onClick={() => editExam(exam.id)}>edit</button>
-              <button type="button" className="widget-btn mini danger" aria-label={`Delete ${exam.title}`} onClick={() => removeExam(exam.id)}>del</button>
+              <button type="button" className="widget-btn mini" aria-label={`Edit ${exam.title}`} onClick={() => editExam(exam.id)}>Edit</button>
+              <button type="button" className="widget-btn mini danger" aria-label={`Delete ${exam.title}`} onClick={() => removeExam(exam.id)}>Del</button>
             </div>
           </div>
         ))}

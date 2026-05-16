@@ -283,6 +283,13 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.widget-btn.mini {
+  padding: 4px 10px;
+  font-size: 0.64rem;
+  letter-spacing: 0.02em;
 }
 
 .widget-btn:hover {

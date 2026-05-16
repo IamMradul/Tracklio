@@ -40,6 +40,12 @@ export interface ExamItem {
   color: string;
 }
 
+export interface PomodoroSettings {
+  workDuration: number;
+  shortBreakDuration: number;
+  longBreakDuration: number;
+}
+
 export interface AppData {
   isLoggedIn: boolean;
   user: { name: string; avatar: string } | null;
@@ -50,9 +56,11 @@ export interface AppData {
   resources: ResourceItem[];
   exams: ExamItem[];
   weeklyTargetHours: number;
+  dailyTargetHours: number;
+  pomodoroSettings: PomodoroSettings;
 }
 
-type ProgressPayload = Pick<AppData, 'subjects' | 'activityData' | 'activityDataMode' | 'reminders' | 'resources' | 'exams' | 'weeklyTargetHours'>;
+type ProgressPayload = Pick<AppData, 'subjects' | 'activityData' | 'activityDataMode' | 'reminders' | 'resources' | 'exams' | 'weeklyTargetHours' | 'dailyTargetHours' | 'pomodoroSettings'>;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -68,6 +76,12 @@ const defaultData: AppData = {
   resources: [],
   exams: [],
   weeklyTargetHours: 40,
+  dailyTargetHours: 4,
+  pomodoroSettings: {
+    workDuration: 25,
+    shortBreakDuration: 5,
+    longBreakDuration: 15,
+  },
 };
 
 interface DataContextType {
@@ -113,6 +127,8 @@ const toProgressPayload = (state: AppData): ProgressPayload => ({
   resources: state.resources,
   exams: state.exams,
   weeklyTargetHours: state.weeklyTargetHours,
+  dailyTargetHours: state.dailyTargetHours,
+  pomodoroSettings: state.pomodoroSettings,
 });
 
 const sanitizeProgressPayload = (rawPayload: unknown): Partial<ProgressPayload> => {
@@ -128,6 +144,12 @@ const sanitizeProgressPayload = (rawPayload: unknown): Partial<ProgressPayload> 
     resources: Array.isArray(payload.resources) ? payload.resources : undefined,
     exams: Array.isArray(payload.exams) ? payload.exams : undefined,
     weeklyTargetHours: typeof payload.weeklyTargetHours === 'number' ? payload.weeklyTargetHours : undefined,
+    dailyTargetHours:  typeof payload.dailyTargetHours  === 'number' ? payload.dailyTargetHours  : undefined,
+    pomodoroSettings:  isRecord(payload.pomodoroSettings) ? {
+      workDuration:       typeof payload.pomodoroSettings.workDuration       === 'number' ? payload.pomodoroSettings.workDuration       : 25,
+      shortBreakDuration: typeof payload.pomodoroSettings.shortBreakDuration === 'number' ? payload.pomodoroSettings.shortBreakDuration : 5,
+      longBreakDuration:  typeof payload.pomodoroSettings.longBreakDuration  === 'number' ? payload.pomodoroSettings.longBreakDuration  : 15,
+    } : undefined,
   };
 };
 
@@ -210,6 +232,14 @@ const normalizeAppData = (rawData: unknown): AppData => {
     resources: Array.isArray(candidate.resources) ? candidate.resources as ResourceItem[] : defaultData.resources,
     exams: Array.isArray(candidate.exams) ? candidate.exams as ExamItem[] : defaultData.exams,
     weeklyTargetHours: typeof candidate.weeklyTargetHours === 'number' ? candidate.weeklyTargetHours : defaultData.weeklyTargetHours,
+    dailyTargetHours:  typeof candidate.dailyTargetHours  === 'number' && candidate.dailyTargetHours > 0
+      ? candidate.dailyTargetHours
+      : defaultData.dailyTargetHours,
+    pomodoroSettings: isRecord(candidate.pomodoroSettings) ? {
+      workDuration:       typeof candidate.pomodoroSettings.workDuration       === 'number' ? candidate.pomodoroSettings.workDuration       : defaultData.pomodoroSettings.workDuration,
+      shortBreakDuration: typeof candidate.pomodoroSettings.shortBreakDuration === 'number' ? candidate.pomodoroSettings.shortBreakDuration : defaultData.pomodoroSettings.shortBreakDuration,
+      longBreakDuration:  typeof candidate.pomodoroSettings.longBreakDuration  === 'number' ? candidate.pomodoroSettings.longBreakDuration  : defaultData.pomodoroSettings.longBreakDuration,
+    } : defaultData.pomodoroSettings,
   };
 };
 
@@ -323,6 +353,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           resources: remotePayload.resources ?? prev.resources,
           exams: remotePayload.exams ?? prev.exams,
           weeklyTargetHours: remotePayload.weeklyTargetHours ?? prev.weeklyTargetHours,
+          dailyTargetHours:  remotePayload.dailyTargetHours  ?? prev.dailyTargetHours,
+          pomodoroSettings:  remotePayload.pomodoroSettings  ?? prev.pomodoroSettings,
         }));
       }
       isHydratingFromSupabaseRef.current = false;

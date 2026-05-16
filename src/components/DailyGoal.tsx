@@ -3,27 +3,14 @@ import { useData } from '../context/DataContext';
 import { toDateKey } from '../lib/studyLogic';
 import './DailyGoal.css';
 
-const DAILY_GOAL_KEY = 'studynx_daily_goal';
 
-/**
- * Reads the stored daily hour goal from localStorage.
- * Defaults to 4 hours if not set.
- */
-const getStoredDailyGoal = (): number => {
-  const stored = localStorage.getItem(DAILY_GOAL_KEY);
-  const parsed = Number(stored);
-  return stored && Number.isFinite(parsed) && parsed > 0 ? parsed : 4;
-};
 
 /**
  * DailyGoal — lets users set a daily study hour goal and shows their progress.
- * - Displays a labelled progress bar: "X.X / Y hrs today"
- * - Shows weekly goal completion percentage
- * - Goal persisted in localStorage
  */
 const DailyGoal: React.FC = () => {
-  const { data } = useData();
-  const [dailyGoal, setDailyGoal] = useState<number>(getStoredDailyGoal);
+  const { data, updateData } = useData();
+  const dailyGoal = data.dailyTargetHours || 4;
   const [editing, setEditing] = useState(false);
   const [inputVal, setInputVal] = useState('');
 
@@ -49,8 +36,7 @@ const DailyGoal: React.FC = () => {
     const parsed = parseFloat(inputVal);
     if (Number.isFinite(parsed) && parsed > 0) {
       const rounded = Math.round(parsed * 10) / 10;
-      setDailyGoal(rounded);
-      localStorage.setItem(DAILY_GOAL_KEY, String(rounded));
+      updateData({ dailyTargetHours: rounded });
     }
     setEditing(false);
   };
@@ -62,10 +48,23 @@ const DailyGoal: React.FC = () => {
 
   return (
     <div className="card daily-goal-card">
-      <div className="card-title">Daily Goal</div>
+      <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        Daily Goal
+        {!editing && (
+          <button 
+            type="button" 
+            className="widget-btn mini" 
+            onClick={startEdit}
+            aria-label="Edit daily goal"
+            title="Set your daily target"
+          >
+            ⚙️ Edit
+          </button>
+        )}
+      </div>
 
       <div className="dg-today-row">
-        <span className="dg-today-label">Today</span>
+        <span className="dg-today-label">Current Target</span>
         {editing ? (
           <div className="dg-edit-row">
             <input
@@ -78,20 +77,13 @@ const DailyGoal: React.FC = () => {
               onChange={e => setInputVal(e.target.value)}
               onKeyDown={handleKeyDown}
               autoFocus
-              aria-label="Daily goal hours"
             />
             <button type="button" className="dg-save-btn" onClick={saveEdit}>✓</button>
           </div>
         ) : (
-          <button
-            type="button"
-            className="dg-goal-display"
-            onClick={startEdit}
-            aria-label={`Daily goal: ${dailyGoal} hours. Click to edit.`}
-            title="Click to change goal"
-          >
+          <span className="dg-goal-value">
             {dailyGoal} hrs/day
-          </button>
+          </span>
         )}
       </div>
 
