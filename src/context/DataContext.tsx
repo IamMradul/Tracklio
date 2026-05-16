@@ -46,6 +46,15 @@ export interface PomodoroSettings {
   longBreakDuration: number;
 }
 
+export interface SessionLog {
+  id: string;
+  subjectId?: string;
+  subjectName?: string;
+  startTime: string; // ISO string
+  durationMinutes: number;
+  quality: number; // 1-5 stars
+}
+
 export interface AppData {
   isLoggedIn: boolean;
   user: { name: string; avatar: string } | null;
@@ -58,9 +67,10 @@ export interface AppData {
   weeklyTargetHours: number;
   dailyTargetHours: number;
   pomodoroSettings: PomodoroSettings;
+  sessionLogs: SessionLog[];
 }
 
-type ProgressPayload = Pick<AppData, 'subjects' | 'activityData' | 'activityDataMode' | 'reminders' | 'resources' | 'exams' | 'weeklyTargetHours' | 'dailyTargetHours' | 'pomodoroSettings'>;
+type ProgressPayload = Pick<AppData, 'subjects' | 'activityData' | 'activityDataMode' | 'reminders' | 'resources' | 'exams' | 'weeklyTargetHours' | 'dailyTargetHours' | 'pomodoroSettings' | 'sessionLogs'>;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -82,6 +92,7 @@ const defaultData: AppData = {
     shortBreakDuration: 5,
     longBreakDuration: 15,
   },
+  sessionLogs: [],
 };
 
 interface DataContextType {
@@ -129,6 +140,7 @@ const toProgressPayload = (state: AppData): ProgressPayload => ({
   weeklyTargetHours: state.weeklyTargetHours,
   dailyTargetHours: state.dailyTargetHours,
   pomodoroSettings: state.pomodoroSettings,
+  sessionLogs: state.sessionLogs,
 });
 
 const sanitizeProgressPayload = (rawPayload: unknown): Partial<ProgressPayload> => {
@@ -150,6 +162,7 @@ const sanitizeProgressPayload = (rawPayload: unknown): Partial<ProgressPayload> 
       shortBreakDuration: typeof payload.pomodoroSettings.shortBreakDuration === 'number' ? payload.pomodoroSettings.shortBreakDuration : 5,
       longBreakDuration:  typeof payload.pomodoroSettings.longBreakDuration  === 'number' ? payload.pomodoroSettings.longBreakDuration  : 15,
     } : undefined,
+    sessionLogs: Array.isArray(payload.sessionLogs) ? payload.sessionLogs : undefined,
   };
 };
 
@@ -240,6 +253,7 @@ const normalizeAppData = (rawData: unknown): AppData => {
       shortBreakDuration: typeof candidate.pomodoroSettings.shortBreakDuration === 'number' ? candidate.pomodoroSettings.shortBreakDuration : defaultData.pomodoroSettings.shortBreakDuration,
       longBreakDuration:  typeof candidate.pomodoroSettings.longBreakDuration  === 'number' ? candidate.pomodoroSettings.longBreakDuration  : defaultData.pomodoroSettings.longBreakDuration,
     } : defaultData.pomodoroSettings,
+    sessionLogs: Array.isArray(candidate.sessionLogs) ? candidate.sessionLogs as SessionLog[] : defaultData.sessionLogs,
   };
 };
 

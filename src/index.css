@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Sora:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Sora:wght@500;600;700&display=swap');
 
 /* ─── Dark theme (default) ───────────────────────────────────────── */
 :root {
@@ -33,7 +33,7 @@
   --shadow-card:   0 18px 34px rgba(3,8,27,0.4);
   --shadow-glow:   0 0 0 1px rgba(92,120,235,0.06) inset;
 
-  --font-sans:     'Outfit', 'Segoe UI', sans-serif;
+  --font-sans:     'Inter', 'Outfit', 'Segoe UI', sans-serif;
   --font-heading:  'Sora', 'Segoe UI', sans-serif;
 
   /* Skeleton loader */

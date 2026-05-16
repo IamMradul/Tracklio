@@ -1,0 +1,210 @@
+.analytics-dashboard {
+  padding: 10px 0;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+}
+
+.analytics-card {
+  background: #0d0d0d;
+  border: 1px solid rgba(245, 166, 35, 0.1);
+  border-radius: 18px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.analytics-card:hover {
+  border-color: rgba(245, 166, 35, 0.25);
+  transform: translateY(-4px);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+  margin: 0;
+  border-left: 3px solid #f5a623;
+  padding-left: 12px;
+}
+
+.chart-container {
+  width: 100%;
+  position: relative;
+}
+
+/* Toggle Group Mini */
+.toggle-group-mini {
+  display: flex;
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.toggle-group-mini button {
+  background: transparent;
+  border: none;
+  color: #666;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-group-mini button.active {
+  background: #f5a623;
+  color: #000;
+}
+
+.chart-icon {
+  font-style: normal;
+  font-size: 1rem;
+}
+
+/* Donut Layout */
+.donut-layout {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.donut-wrap {
+  position: relative;
+  width: 180px;
+  flex-shrink: 0;
+}
+
+.donut-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.total-label {
+  font-size: 0.65rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.total-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.donut-legend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.76rem;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-name {
+  color: #aaa;
+}
+
+.legend-value {
+  color: #eee;
+  font-weight: 500;
+}
+
+/* Quality Layout */
+.quality-layout {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.quality-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.q-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+}
+
+.q-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.q-legend-stars {
+  letter-spacing: -2px;
+  filter: grayscale(1) brightness(2);
+}
+
+.q-legend-label {
+  color: #888;
+  font-weight: 600;
+}
+
+/* Recharts Overrides */
+.recharts-cartesian-axis-tick-value {
+  font-family: 'Outfit', sans-serif;
+}
+
+.recharts-tooltip-wrapper {
+  outline: none;
+}
+
+.recharts-polar-grid-concentric-path {
+  stroke-width: 0.5px;
+}
+
+@media (max-width: 900px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .donut-layout, .quality-layout {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .donut-wrap {
+    margin: 0 auto;
+  }
+}
