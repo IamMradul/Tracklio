@@ -24,6 +24,13 @@ const baseData: AppData = {
   resources: [],
   exams: [],
   weeklyTargetHours: 40,
+  dailyTargetHours: 4,
+  pomodoroSettings: {
+    workDuration: 25,
+    shortBreakDuration: 5,
+    longBreakDuration: 15,
+  },
+  sessionLogs: [],
 };
 
 describe('study session logging', () => {

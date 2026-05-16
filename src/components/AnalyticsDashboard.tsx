@@ -17,7 +17,6 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Radar,
-  Legend,
 } from 'recharts';
 import { useData } from '../context/DataContext';
 import './AnalyticsDashboard.css';
@@ -274,9 +273,9 @@ const AnalyticsDashboard: React.FC = () => {
                   cy="50%"
                   outerRadius={80}
                   dataKey="value"
-                  label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                  label={({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`}
                 >
-                  {qualityData.map((entry, index) => (
+                  {qualityData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={QUALITY_COLORS[index]} />
                   ))}
                 </Pie>

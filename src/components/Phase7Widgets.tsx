@@ -6,11 +6,13 @@ import './PomodoroWidget.css';
 
 type PomodoroMode = 'work' | 'short' | 'long';
 
+/* 
 const MODE_CONFIG: Record<PomodoroMode, { label: string; duration: number; color: string }> = {
   work: { label: 'Focus', duration: 25 * 60, color: '#5f8dff' },
   short: { label: 'Short Break', duration: 5 * 60, color: '#35d6b5' },
   long: { label: 'Long Break', duration: 15 * 60, color: '#ffad4c' },
 };
+*/
 
 const RING_RADIUS = 54;
 const RING_CIRC = 2 * Math.PI * RING_RADIUS;

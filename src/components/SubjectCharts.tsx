@@ -79,7 +79,7 @@ const SubjectCharts: React.FC = () => {
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(1)} hrs` } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed?.y?.toFixed(1) ?? '0'} hrs` } },
       },
       scales: {
         x: { grid: { color: gridColor }, ticks: { color: labelColor, font: { size: 11 } } },

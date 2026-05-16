@@ -9,7 +9,6 @@ import { Resources, Reminders, CalendarWidget } from './Phase8Widgets';
 import InsightsPanel from './InsightsPanel';
 import ThemeToggle from './ThemeToggle';
 import StreakBadge from './StreakBadge';
-import SubjectCharts from './SubjectCharts';
 import DailyGoal from './DailyGoal';
 import ExportReport from './ExportReport';
 import AnalyticsDashboard from './AnalyticsDashboard';
