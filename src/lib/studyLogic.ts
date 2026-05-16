@@ -1,6 +1,6 @@
 import type { AppData, Subject } from '../context/DataContext';
 
-export type StudySessionSource = 'heatmap' | 'subject';
+export type StudySessionSource = 'heatmap' | 'subject' | 'pomodoro';
 
 export interface StudySessionLog {
   source: StudySessionSource;
@@ -213,6 +213,19 @@ export const applyStudySessionLog = (data: AppData, session: StudySessionLog): A
       activityData: {
         ...data.activityData,
         [session.dateKey]: roundedHours,
+      },
+      activityDataMode: 'hours',
+    };
+  }
+
+  // Pomodoro sessions accumulate hours into activityData (don't overwrite)
+  if (session.source === 'pomodoro') {
+    const existing = data.activityData[session.dateKey] ?? 0;
+    return {
+      ...data,
+      activityData: {
+        ...data.activityData,
+        [session.dateKey]: Number((existing + roundedHours).toFixed(1)),
       },
       activityDataMode: 'hours',
     };

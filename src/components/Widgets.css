@@ -1,13 +1,14 @@
 .widget-card {
   display: flex;
   flex-direction: column;
-  min-height: 220px;
+  min-height: 200px;
 }
 
+/* Legacy timer display (still used in some places) */
 .timer-display {
   font-size: 2.75rem;
   font-weight: 700;
-  color: #ebf3ff;
+  color: var(--text-heading);
   text-align: center;
   font-variant-numeric: tabular-nums;
   line-height: 1;
@@ -27,22 +28,7 @@
   justify-content: center;
   gap: 10px;
   margin-bottom: 20px;
-}
-
-.widget-btn {
-  background: rgba(15, 34, 80, 0.8);
-  border: 1px solid rgba(127, 151, 232, 0.35);
-  color: #ccdcff;
-  padding: 8px 17px;
-  border-radius: 999px;
-  font-size: 0.74rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.widget-btn:hover {
-  background: rgba(32, 60, 130, 0.8);
-  border-color: rgba(141, 172, 255, 0.55);
+  flex-wrap: wrap;
 }
 
 .timer-dots {
@@ -56,14 +42,15 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background-color: #425079;
+  background-color: var(--border-soft);
 }
 
 .dot.active {
-  background-color: #5f8dff;
-  box-shadow: 0 0 8px rgba(95, 141, 255, 0.8);
+  background-color: var(--accent-blue);
+  box-shadow: 0 0 8px rgba(95, 141, 255, 0.6);
 }
 
+/* ─── Exam countdown ────────────────────────────────────────────── */
 .exam-list {
   display: flex;
   flex-direction: column;
@@ -84,98 +71,63 @@
   width: 42px;
   text-align: right;
   line-height: 1;
+  color: var(--text-heading);
 }
 
-.exam-info {
-  flex: 1;
-  min-width: 120px;
-}
+.exam-info { flex: 1; min-width: 120px; }
 
 .exam-title {
   font-weight: 500;
-  color: #eaf2ff;
+  color: var(--text-heading);
   font-size: 0.82rem;
   overflow-wrap: anywhere;
 }
 
 .exam-date {
   font-size: 0.68rem;
-  color: #94a7dc;
+  color: var(--text-muted);
 }
 
 .exam-progress-bar {
   width: 54px;
   min-width: 54px;
   height: 5px;
-  background-color: #2a395f;
+  background-color: var(--bg-input);
   border-radius: 5px;
   overflow: hidden;
 }
 
-.exam-add-row {
-  flex-wrap: wrap;
-  align-items: stretch;
-}
+.exam-progress-fill { height: 100%; }
 
-.exam-add-title {
-  min-width: 180px;
-}
-
-.exam-add-date {
-  min-width: 170px;
-}
-
-.exam-add-btn {
-  flex: 0 0 auto;
-  min-width: 44px;
-}
+.exam-add-row { flex-wrap: wrap; align-items: stretch; }
+.exam-add-title { min-width: 180px; }
+.exam-add-date  { min-width: 170px; }
+.exam-add-btn   { flex: 0 0 auto; min-width: 44px; }
 
 @media (max-width: 640px) {
-  .exam-item {
-    align-items: flex-start;
-  }
-
-  .exam-progress-bar {
-    width: 100%;
-    min-width: 0;
-    order: 4;
-  }
-
-  .exam-item .subject-actions {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .exam-add-title,
-  .exam-add-date,
-  .exam-add-btn {
-    flex: 1 1 100%;
-    min-width: 0;
-  }
+  .exam-item { align-items: flex-start; }
+  .exam-progress-bar { width: 100%; min-width: 0; order: 4; }
+  .exam-item .subject-actions { width: 100%; justify-content: flex-start; }
+  .exam-add-title, .exam-add-date, .exam-add-btn { flex: 1 1 100%; min-width: 0; }
 }
 
-.exam-progress-fill {
-  height: 100%;
-}
-
-.goal-display {
-  margin: 10px 0 12px;
-}
+/* ─── Weekly goal ───────────────────────────────────────────────── */
+.goal-display { margin: 10px 0 12px; }
 
 .goal-current {
   font-size: 2rem;
   font-weight: 700;
-  color: #edf4ff;
+  color: var(--text-heading);
 }
 
 .goal-target {
   font-size: 0.86rem;
-  color: #8fa5da;
+  color: var(--text-muted);
 }
 
 .goal-track {
   height: 9px;
-  background-color: #2a3a61;
+  background-color: var(--bg-input);
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 10px;
@@ -183,14 +135,13 @@
 
 .goal-fill {
   height: 100%;
-  background: linear-gradient(90deg, #34d5b4 0%, #5f8dff 100%);
+  background: linear-gradient(90deg, var(--accent-teal) 0%, var(--accent-blue) 100%);
+  transition: width 0.5s ease;
 }
 
-.goal-text {
-  font-size: 0.72rem;
-  color: #8ca0d5;
-}
+.goal-text { font-size: 0.72rem; color: var(--text-muted); }
 
+/* ─── Add rows & inputs ─────────────────────────────────────────── */
 .add-reminder-row {
   display: flex;
   gap: 8px;
@@ -199,17 +150,24 @@
 
 .add-reminder-input {
   flex: 1;
-  background: rgba(13, 27, 67, 0.8);
-  border: 1px solid rgba(120, 148, 235, 0.28);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 8px 10px;
-  color: #deebff;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.82rem;
+  transition: border-color 0.2s ease;
 }
 
-.add-reminder-input::placeholder {
-  color: #7f94ca;
+.add-reminder-input:focus {
+  border-color: var(--accent-blue);
+  outline: none;
 }
 
+.add-reminder-input::placeholder { color: var(--text-muted); }
+
+/* ─── Subject actions ───────────────────────────────────────────── */
 .subject-actions {
   display: flex;
   gap: 6px;
@@ -223,6 +181,16 @@
 }
 
 .widget-btn.danger {
-  border-color: rgba(255, 122, 132, 0.45);
-  color: #ffb8c0;
+  border-color: rgba(255, 95, 116, 0.4);
+  color: var(--accent-red);
+}
+
+.widget-btn.danger:hover {
+  background: rgba(255, 95, 116, 0.12);
+}
+
+.widget-btn.add-btn {
+  padding: 8px 14px;
+  font-size: 0.86rem;
+  font-weight: 700;
 }

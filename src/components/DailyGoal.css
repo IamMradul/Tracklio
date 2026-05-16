@@ -1,0 +1,126 @@
+.daily-goal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dg-today-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.dg-today-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.dg-goal-display {
+  background: none;
+  border: 1px dashed var(--border-soft);
+  border-radius: 6px;
+  color: var(--accent-blue);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dg-goal-display:hover {
+  border-color: var(--accent-blue);
+  background: rgba(95,141,255,0.08);
+}
+
+.dg-edit-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.dg-edit-input {
+  width: 70px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  color: var(--text-main);
+  padding: 4px 8px;
+  font-size: 0.82rem;
+  font-family: inherit;
+}
+
+.dg-save-btn {
+  background: var(--accent-blue);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.dg-progress-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.dg-pct {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.dg-pct.goal-met {
+  color: var(--accent-teal);
+}
+
+.dg-track {
+  height: 10px;
+  background: var(--bg-input);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.dg-track-sm {
+  height: 6px;
+}
+
+.dg-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-teal) 0%, var(--accent-blue) 100%);
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+.dg-fill-complete {
+  background: linear-gradient(90deg, var(--accent-teal), #2ef9d4);
+  box-shadow: 0 0 8px rgba(24,213,182,0.4);
+}
+
+.dg-weekly-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.dg-weekly-label {
+  font-weight: 500;
+}
+
+.dg-congrats {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--accent-teal);
+  font-weight: 600;
+  padding: 6px;
+  background: rgba(24,213,182,0.08);
+  border-radius: 8px;
+  border: 1px solid rgba(24,213,182,0.2);
+}

@@ -3,9 +3,7 @@ import type { ReactNode } from 'react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { signInWithGoogleDirect } from '../lib/googleAuth';
-import { isGeminiConfigured, generateGeminiText } from '../lib/gemini';
-import { applyStudySessionLog, buildGeminiPlanPrompt, buildGeminiPrompt, buildStudyContext, createFallbackTomorrowPlan, parseGeminiStudyPlan, toDateKey, type GeminiStudyPlan, type StudySessionLog } from '../lib/studyLogic';
-import { buildStudySessionDraft, fetchUpcomingTracklioEventsWithToken, syncStudySessionEventWithToken, syncTomorrowPlanToCalendarWithToken, type CalendarListItem } from '../lib/googleCalendar';
+import { applyStudySessionLog, toDateKey, type StudySessionLog } from '../lib/studyLogic';
 
 // --- Types ---
 export interface Subject {
@@ -25,7 +23,7 @@ export interface Reminder {
   title: string;
   description: string;
   timeStr: string;
-  type: 'warning' | 'info' | 'success'; 
+  type: 'warning' | 'info' | 'success';
 }
 
 export interface ResourceItem {
@@ -64,7 +62,7 @@ const defaultData: AppData = {
   isLoggedIn: false,
   user: null,
   subjects: [],
-  activityData: {}, // Heatmap data
+  activityData: {},
   activityDataMode: 'hours',
   reminders: [],
   resources: [],
@@ -76,7 +74,6 @@ interface DataContextType {
   data: AppData;
   authMode: 'supabase-email' | 'local';
   isGoogleDirectEnabled: boolean;
-  isGeminiEnabled: boolean;
   isAuthLoading: boolean;
   authPromptMessage: string | null;
   requestAuthPrompt: (message?: string) => void;
@@ -90,9 +87,6 @@ interface DataContextType {
   logout: () => Promise<void>;
   updateData: (newData: Partial<AppData>) => void;
   logStudySession: (session: StudySessionLog) => Promise<AuthResult>;
-  askGeminiAssistant: (question: string) => Promise<{ ok: boolean; message: string; response?: string }>;
-  planTomorrowStudySchedule: () => Promise<{ ok: boolean; message: string; plan?: GeminiStudyPlan }>;
-  fetchUpcomingCalendarEvents: () => Promise<{ ok: boolean; message: string; events: CalendarListItem[] }>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -101,10 +95,6 @@ const STORAGE_KEY = 'tracklio_data';
 type AuthResult = { ok: boolean; message: string };
 
 const GOOGLE_SESSION_KEY = 'tracklio_google_session';
-const REQUIRED_CALENDAR_SCOPES = [
-  'https://www.googleapis.com/auth/calendar.events',
-  'https://www.googleapis.com/auth/calendar.readonly',
-];
 
 type GoogleSession = {
   email: string;
@@ -126,12 +116,8 @@ const toProgressPayload = (state: AppData): ProgressPayload => ({
 });
 
 const sanitizeProgressPayload = (rawPayload: unknown): Partial<ProgressPayload> => {
-  if (!rawPayload || typeof rawPayload !== 'object') {
-    return {};
-  }
-
+  if (!rawPayload || typeof rawPayload !== 'object') return {};
   const payload = rawPayload as Partial<ProgressPayload>;
-
   return {
     subjects: Array.isArray(payload.subjects) ? payload.subjects : undefined,
     activityData: payload.activityData && typeof payload.activityData === 'object'
@@ -146,29 +132,20 @@ const sanitizeProgressPayload = (rawPayload: unknown): Partial<ProgressPayload> 
 };
 
 const normalizeActivityData = (activityData: unknown, mode: unknown): Record<string, number> => {
-  if (!isRecord(activityData)) {
-    return {};
-  }
-
+  if (!isRecord(activityData)) return {};
   const isHoursMode = mode === 'hours';
   const normalizedEntries = Object.entries(activityData)
     .filter((entry): entry is [string, number] => typeof entry[1] === 'number' && Number.isFinite(entry[1]))
     .map(([dateKey, value]) => {
-      if (isHoursMode) {
-        return [dateKey, value] as const;
-      }
-
+      if (isHoursMode) return [dateKey, value] as const;
       const legacyValue = value >= 0 && value <= 4 && Number.isInteger(value) ? value * 1.5 : value;
       return [dateKey, legacyValue] as const;
     });
-
   return Object.fromEntries(normalizedEntries) as Record<string, number>;
 };
 
 const normalizeSubjects = (subjects: unknown): Subject[] => {
-  if (!Array.isArray(subjects)) {
-    return [];
-  }
+  if (!Array.isArray(subjects)) return [];
 
   const toStatus = (progress: number): Subject['status'] => {
     if (progress >= 100) return 'on track';
@@ -176,55 +153,41 @@ const normalizeSubjects = (subjects: unknown): Subject[] => {
     return 'needs focus';
   };
 
-  return subjects
-    .filter(isRecord)
-    .map((subject, index) => {
-      const id = typeof subject.id === 'string' && subject.id.trim() ? subject.id : crypto.randomUUID();
-      const name = typeof subject.name === 'string' && subject.name.trim() ? subject.name : `Subject ${index + 1}`;
-      const color = typeof subject.color === 'string' && subject.color.trim() ? subject.color : '#5f8dff';
-      const targetHours = typeof subject.targetHours === 'number' && Number.isFinite(subject.targetHours) && subject.targetHours > 0
-        ? Number(subject.targetHours.toFixed(1))
-        : 40;
+  return subjects.filter(isRecord).map((subject, index) => {
+    const id = typeof subject.id === 'string' && subject.id.trim() ? subject.id : crypto.randomUUID();
+    const name = typeof subject.name === 'string' && subject.name.trim() ? subject.name : `Subject ${index + 1}`;
+    const color = typeof subject.color === 'string' && subject.color.trim() ? subject.color : '#5f8dff';
+    const targetHours = typeof subject.targetHours === 'number' && Number.isFinite(subject.targetHours) && subject.targetHours > 0
+      ? Number(subject.targetHours.toFixed(1))
+      : 40;
 
-      const dailyHours = isRecord(subject.dailyHours)
-        ? Object.fromEntries(
-          Object.entries(subject.dailyHours)
-            .filter((entry): entry is [string, number] => typeof entry[1] === 'number' && Number.isFinite(entry[1]) && entry[1] > 0)
-            .map(([dateKey, hours]) => [dateKey, Number(hours.toFixed(1))])
-        ) as Record<string, number>
-        : {};
+    const dailyHours = isRecord(subject.dailyHours)
+      ? Object.fromEntries(
+        Object.entries(subject.dailyHours)
+          .filter((entry): entry is [string, number] => typeof entry[1] === 'number' && Number.isFinite(entry[1]) && entry[1] > 0)
+          .map(([dateKey, hours]) => [dateKey, Number(hours.toFixed(1))])
+      ) as Record<string, number>
+      : {};
 
-      const legacyDates = Array.isArray(subject.studyDates)
-        ? subject.studyDates.filter((value): value is string => typeof value === 'string')
-        : [];
+    const legacyDates = Array.isArray(subject.studyDates)
+      ? subject.studyDates.filter((value): value is string => typeof value === 'string')
+      : [];
 
-      for (const dateKey of legacyDates) {
-        if (!dailyHours[dateKey]) {
-          dailyHours[dateKey] = 1.5;
-        }
-      }
+    for (const dateKey of legacyDates) {
+      if (!dailyHours[dateKey]) dailyHours[dateKey] = 1.5;
+    }
 
-      const totalHoursRaw = Object.values(dailyHours).reduce((sum, hours) => sum + hours, 0);
-      const totalHours = Number(totalHoursRaw.toFixed(1));
-      const progress = Math.min(100, Math.round((totalHours / targetHours) * 100));
-      const status = toStatus(progress);
-      const studyDates = Object.entries(dailyHours)
-        .filter(([, hours]) => hours > 0)
-        .map(([dateKey]) => dateKey)
-        .sort();
+    const totalHoursRaw = Object.values(dailyHours).reduce((sum, hours) => sum + hours, 0);
+    const totalHours = Number(totalHoursRaw.toFixed(1));
+    const progress = Math.min(100, Math.round((totalHours / targetHours) * 100));
+    const status = toStatus(progress);
+    const studyDates = Object.entries(dailyHours)
+      .filter(([, hours]) => hours > 0)
+      .map(([dateKey]) => dateKey)
+      .sort();
 
-      return {
-        id,
-        name,
-        progress,
-        totalHours,
-        targetHours,
-        status,
-        color,
-        studyDates,
-        dailyHours,
-      };
-    });
+    return { id, name, progress, totalHours, targetHours, status, color, studyDates, dailyHours };
+  });
 };
 
 const normalizeAppData = (rawData: unknown): AppData => {
@@ -250,52 +213,37 @@ const normalizeAppData = (rawData: unknown): AppData => {
   };
 };
 
+/** Reads the stored Google session from localStorage. Returns null if missing or invalid. */
 const readGoogleSession = (): GoogleSession | null => {
   const rawSession = localStorage.getItem(GOOGLE_SESSION_KEY);
-  if (!rawSession) {
-    return null;
-  }
-
+  if (!rawSession) return null;
   try {
     const parsed = JSON.parse(rawSession) as Partial<GoogleSession>;
     if (typeof parsed.email !== 'string' || typeof parsed.name !== 'string' || typeof parsed.avatar !== 'string') {
       return null;
     }
-
     return {
       email: parsed.email,
       name: parsed.name,
       avatar: parsed.avatar,
       accessToken: typeof parsed.accessToken === 'string' ? parsed.accessToken : undefined,
-      expiresAt: typeof parsed.expiresAt === 'number' ? parsed.expiresAt : undefined,
-      scope: typeof parsed.scope === 'string' ? parsed.scope : undefined,
+      expiresAt:   typeof parsed.expiresAt   === 'number' ? parsed.expiresAt   : undefined,
+      scope:       typeof parsed.scope       === 'string' ? parsed.scope       : undefined,
     };
   } catch {
     return null;
   }
 };
 
-const saveGoogleSession = (session: GoogleSession) => {
+/** Persists the Google session to localStorage. */
+const saveGoogleSession = (session: GoogleSession) =>
   localStorage.setItem(GOOGLE_SESSION_KEY, JSON.stringify(session));
-};
 
-const clearGoogleSession = () => {
-  localStorage.removeItem(GOOGLE_SESSION_KEY);
-};
-
-const hasRequiredCalendarScopes = (scope?: string) => {
-  if (!scope) {
-    return false;
-  }
-
-  const granted = new Set(scope.split(/\s+/).filter(Boolean));
-  return REQUIRED_CALENDAR_SCOPES.every((requiredScope) => granted.has(requiredScope));
-};
+const clearGoogleSession = () => localStorage.removeItem(GOOGLE_SESSION_KEY);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
   const isGoogleDirectEnabled = Boolean(googleClientId);
-  const isGeminiEnabled = isGeminiConfigured;
   const authMode: 'supabase-email' | 'local' = isSupabaseConfigured ? 'supabase-email' : 'local';
   const isHydratingFromSupabaseRef = useRef(false);
   const hydratedUserRef = useRef<string | null>(null);
@@ -305,94 +253,40 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [data, setData] = useState<AppData>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      try {
-        return normalizeAppData(JSON.parse(saved));
-      } catch {
-        return defaultData;
-      }
+      try { return normalizeAppData(JSON.parse(saved)); } catch { return defaultData; }
     }
     return defaultData;
   });
 
-  const getStoredGoogleSession = () => {
-    const session = readGoogleSession();
-    if (!session?.accessToken || (session.expiresAt && session.expiresAt <= Date.now())) {
-      return null;
-    }
-
-    if (!hasRequiredCalendarScopes(session.scope)) {
-      clearGoogleSession();
-      return null;
-    }
-
-    return session;
-  };
-
-  const requestAuthPrompt = (message = 'Sign in to save changes.') => {
-    setAuthPromptMessage(message);
-  };
-
-  const dismissAuthPrompt = () => {
-    setAuthPromptMessage(null);
-  };
+  const requestAuthPrompt = (message = 'Sign in to save changes.') => setAuthPromptMessage(message);
+  const dismissAuthPrompt = () => setAuthPromptMessage(null);
 
   useEffect(() => {
     const supabaseClient = supabase;
-    if (authMode !== 'supabase-email') {
-      setIsAuthLoading(false);
-      return;
-    }
-
-    if (!isSupabaseConfigured || !supabaseClient) {
-      setIsAuthLoading(false);
-      return;
-    }
+    if (authMode !== 'supabase-email') { setIsAuthLoading(false); return; }
+    if (!isSupabaseConfigured || !supabaseClient) { setIsAuthLoading(false); return; }
 
     const applySession = (session: Session | null) => {
       if (session?.user?.email) {
         const email = session.user.email;
-
-        setData(prev => ({
-          ...prev,
-          isLoggedIn: true,
-          user: {
-            name: email,
-            avatar: email.slice(0, 2).toUpperCase(),
-          },
-        }));
+        setData(prev => ({ ...prev, isLoggedIn: true, user: { name: email, avatar: email.slice(0, 2).toUpperCase() } }));
       } else {
         const savedGoogleSession = readGoogleSession();
-
         if (savedGoogleSession) {
-          setData(prev => ({
-            ...prev,
-            isLoggedIn: true,
-            user: {
-              name: savedGoogleSession.name,
-              avatar: savedGoogleSession.avatar,
-            },
-          }));
+          setData(prev => ({ ...prev, isLoggedIn: true, user: { name: savedGoogleSession.name, avatar: savedGoogleSession.avatar } }));
           return;
         }
-
-        setData(prev => ({
-          ...prev,
-          isLoggedIn: false,
-          user: null,
-        }));
+        setData(prev => ({ ...prev, isLoggedIn: false, user: null }));
       }
     };
 
     let isMounted = true;
-
     const bootstrapAuth = async () => {
       const { data: sessionData } = await supabaseClient.auth.getSession();
       if (!isMounted) return;
-
       applySession(sessionData.session);
       setIsAuthLoading(false);
     };
-
     bootstrapAuth();
 
     const { data: authSubscription } = supabaseClient.auth.onAuthStateChange((_event, session) => {
@@ -400,55 +294,30 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsAuthLoading(false);
     });
 
-    return () => {
-      isMounted = false;
-      authSubscription.subscription.unsubscribe();
-    };
+    return () => { isMounted = false; authSubscription.subscription.unsubscribe(); };
   }, [authMode]);
 
   useEffect(() => {
     const supabaseClient = supabase;
     if (!isSupabaseConfigured || !supabaseClient) return;
-    if (!data.isLoggedIn || !data.user?.name) {
-      hydratedUserRef.current = null;
-      return;
-    }
-
-    if (hydratedUserRef.current === data.user.name) {
-      return;
-    }
+    if (!data.isLoggedIn || !data.user?.name) { hydratedUserRef.current = null; return; }
+    if (hydratedUserRef.current === data.user.name) return;
 
     const userName = data.user.name;
     hydratedUserRef.current = userName;
     isHydratingFromSupabaseRef.current = true;
-
     let isCancelled = false;
 
     const hydrateFromSupabase = async () => {
-      const { data: row, error } = await supabaseClient
-        .from('user_progress')
-        .select('payload')
-        .eq('user_name', userName)
-        .maybeSingle();
-
+      const { data: row, error } = await supabaseClient.from('user_progress').select('payload').eq('user_name', userName).maybeSingle();
       if (isCancelled) return;
-
-      if (error) {
-        console.error('Supabase fetch error:', error.message);
-        isHydratingFromSupabaseRef.current = false;
-        return;
-      }
-
+      if (error) { console.error('Supabase fetch error:', error.message); isHydratingFromSupabaseRef.current = false; return; }
       if (row?.payload) {
         const remotePayload = sanitizeProgressPayload(row.payload);
-
         setData(prev => ({
           ...prev,
           subjects: normalizeSubjects(remotePayload.subjects ?? prev.subjects),
-          activityData: normalizeActivityData(
-            remotePayload.activityData ?? prev.activityData,
-            remotePayload.activityDataMode ?? prev.activityDataMode
-          ),
+          activityData: normalizeActivityData(remotePayload.activityData ?? prev.activityData, remotePayload.activityDataMode ?? prev.activityDataMode),
           activityDataMode: 'hours',
           reminders: remotePayload.reminders ?? prev.reminders,
           resources: remotePayload.resources ?? prev.resources,
@@ -456,20 +325,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           weeklyTargetHours: remotePayload.weeklyTargetHours ?? prev.weeklyTargetHours,
         }));
       }
-
       isHydratingFromSupabaseRef.current = false;
     };
 
     hydrateFromSupabase();
-
-    return () => {
-      isCancelled = true;
-    };
+    return () => { isCancelled = true; };
   }, [data.isLoggedIn, data.user?.name]);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [data]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }, [data]);
 
   useEffect(() => {
     const supabaseClient = supabase;
@@ -478,72 +341,43 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (isHydratingFromSupabaseRef.current) return;
 
     const payload = toProgressPayload(data);
-
     const saveToSupabase = async () => {
-      const { error } = await supabaseClient
-        .from('user_progress')
-        .upsert(
-          {
-            user_name: data.user!.name,
-            payload,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_name' }
-        );
-
-      if (error) {
-        console.error('Supabase save error:', error.message);
-      }
+      const { error } = await supabaseClient.from('user_progress').upsert(
+        { user_name: data.user!.name, payload, updated_at: new Date().toISOString() },
+        { onConflict: 'user_name' }
+      );
+      if (error) console.error('Supabase save error:', error.message);
     };
-
     saveToSupabase();
   }, [data]);
 
   const requestEmailSignIn = async (email: string) => {
     const supabaseClient = supabase;
     if (authMode !== 'supabase-email' || !isSupabaseConfigured || !supabaseClient) {
-      return {
-        ok: false,
-        message: 'Email auth via Supabase is not enabled in current mode.',
-      };
+      return { ok: false, message: 'Email auth via Supabase is not enabled in current mode.' };
     }
-
-    const { error } = await supabaseClient.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: window.location.origin,
-      },
-    });
-
-    if (error) {
-      return {
-        ok: false,
-        message: error.message,
-      };
-    }
-
-    return {
-      ok: true,
-      message: 'Magic link sent. Check your email to sign in.',
-    };
+    const { error } = await supabaseClient.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
+    if (error) return { ok: false, message: error.message };
+    return { ok: true, message: 'Magic link sent. Check your email to sign in.' };
   };
 
+  /**
+   * Google sign-in via GSI popup (profile + email scopes only, no Calendar).
+   * Stores name, avatar, and access token in localStorage for session persistence.
+   */
   const signInWithGoogle = async (): Promise<AuthResult> => {
     if (!isGoogleDirectEnabled) {
-      return {
-        ok: false,
-        message: 'Direct Google auth is not enabled.',
-      };
+      return { ok: false, message: 'Direct Google auth is not enabled.' };
     }
 
     try {
       const profile = await signInWithGoogleDirect(googleClientId || '');
-      const displaySource = profile.name || profile.email;
-      const initials = displaySource.slice(0, 2).toUpperCase();
+      const displayName = profile.name || profile.email;
+      const initials = displayName.slice(0, 2).toUpperCase();
 
       saveGoogleSession({
         email: profile.email,
-        name: profile.name || profile.email,
+        name: displayName,
         avatar: initials,
         accessToken: profile.accessToken,
         expiresAt: profile.expiresAt,
@@ -553,17 +387,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setData(prev => ({
         ...prev,
         isLoggedIn: true,
-        user: {
-          name: profile.name || profile.email,
-          avatar: initials,
-        },
+        user: { name: displayName, avatar: initials },
       }));
       dismissAuthPrompt();
 
-      return {
-        ok: true,
-        message: `Signed in as ${profile.email}`,
-      };
+      return { ok: true, message: `Signed in as ${profile.email}` };
     } catch (error) {
       return {
         ok: false,
@@ -575,99 +403,37 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const signInWithPassword = async (email: string, password: string): Promise<AuthResult> => {
     const supabaseClient = supabase;
     if (authMode !== 'supabase-email' || !isSupabaseConfigured || !supabaseClient) {
-      return {
-        ok: false,
-        message: 'Email auth via Supabase is not enabled in current mode.',
-      };
+      return { ok: false, message: 'Email auth via Supabase is not enabled in current mode.' };
     }
-
-    const { error } = await supabaseClient.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      return {
-        ok: false,
-        message: error.message,
-      };
-    }
-
-    return {
-      ok: true,
-      message: 'Signed in successfully.',
-    };
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) return { ok: false, message: error.message };
+    return { ok: true, message: 'Signed in successfully.' };
   };
 
   const signUpWithPassword = async (email: string, password: string): Promise<AuthResult> => {
     const supabaseClient = supabase;
     if (authMode !== 'supabase-email' || !isSupabaseConfigured || !supabaseClient) {
-      return {
-        ok: false,
-        message: 'Email auth via Supabase is not enabled in current mode.',
-      };
+      return { ok: false, message: 'Email auth via Supabase is not enabled in current mode.' };
     }
-
-    const { data: signUpData, error } = await supabaseClient.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-      },
-    });
-
-    if (error) {
-      return {
-        ok: false,
-        message: error.message,
-      };
-    }
-
+    const { data: signUpData, error } = await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
+    if (error) return { ok: false, message: error.message };
     const hasSession = Boolean(signUpData.session);
-    return {
-      ok: true,
-      message: hasSession
-        ? 'Account created and signed in.'
-        : 'Account created. Check your email to confirm your account.',
-    };
+    return { ok: true, message: hasSession ? 'Account created and signed in.' : 'Account created. Check your email to confirm.' };
   };
 
   const requestPasswordReset = async (email: string): Promise<AuthResult> => {
     const supabaseClient = supabase;
     if (authMode !== 'supabase-email' || !isSupabaseConfigured || !supabaseClient) {
-      return {
-        ok: false,
-        message: 'Email auth via Supabase is not enabled in current mode.',
-      };
+      return { ok: false, message: 'Email auth via Supabase is not enabled in current mode.' };
     }
-
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin,
-    });
-
-    if (error) {
-      return {
-        ok: false,
-        message: error.message,
-      };
-    }
-
-    return {
-      ok: true,
-      message: 'Password reset email sent. Check your inbox.',
-    };
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+    if (error) return { ok: false, message: error.message };
+    return { ok: true, message: 'Password reset email sent. Check your inbox.' };
   };
 
   const login = (name: string) => {
-    if (authMode !== 'local') {
-      return;
-    }
-
-    setData(prev => ({
-      ...prev,
-      isLoggedIn: true,
-      user: { name, avatar: name.slice(0, 2).toUpperCase() },
-    }));
+    if (authMode !== 'local') return;
+    setData(prev => ({ ...prev, isLoggedIn: true, user: { name, avatar: name.slice(0, 2).toUpperCase() } }));
     dismissAuthPrompt();
   };
 
@@ -675,174 +441,32 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const supabaseClient = supabase;
     if (authMode === 'supabase-email' && isSupabaseConfigured && supabaseClient) {
       const { error } = await supabaseClient.auth.signOut();
-      if (error) {
-        console.error('Supabase sign out error:', error.message);
-      }
+      if (error) console.error('Supabase sign out error:', error.message);
     }
-
     clearGoogleSession();
     dismissAuthPrompt();
-
-    setData(prev => ({
-      ...prev,
-      isLoggedIn: false,
-      user: null
-    }));
+    setData(prev => ({ ...prev, isLoggedIn: false, user: null }));
   };
 
   const updateData = (newData: Partial<AppData>) => {
-    if (!data.isLoggedIn) {
-      requestAuthPrompt('Sign in to save your dashboard changes.');
-      return;
-    }
-
+    if (!data.isLoggedIn) { requestAuthPrompt('Sign in to save your dashboard changes.'); return; }
     setData(prev => normalizeAppData({ ...prev, ...newData }));
   };
 
+  /**
+   * Logs a study session to activityData (and subject dailyHours if applicable).
+   * @param session - StudySessionLog with source, dateKey, hours
+   */
   const logStudySession = async (session: StudySessionLog): Promise<AuthResult> => {
     if (!data.isLoggedIn) {
       requestAuthPrompt('Sign in to save study changes.');
-      return {
-        ok: false,
-        message: 'Sign in to save study changes.',
-      };
+      return { ok: false, message: 'Sign in to save study changes.' };
     }
-
     setData(prev => normalizeAppData(applyStudySessionLog(prev, session)));
-
-    if (session.hours <= 0) {
-      return {
-        ok: true,
-        message: 'Study session cleared locally.',
-      };
-    }
-
-    const storedSession = getStoredGoogleSession();
-    if (!storedSession?.accessToken) {
-      return {
-        ok: true,
-        message: 'Study session logged locally.',
-      };
-    }
-
-    try {
-      await syncStudySessionEventWithToken(storedSession.accessToken, buildStudySessionDraft(session));
-      return {
-        ok: true,
-        message: 'Study session logged and synced to Google Calendar.',
-      };
-    } catch (error) {
-      return {
-        ok: true,
-        message: error instanceof Error
-          ? `Study session logged locally. Calendar sync skipped: ${error.message}`
-          : 'Study session logged locally. Calendar sync skipped.',
-      };
-    }
-  };
-
-  const askGeminiAssistant = async (question: string) => {
-    if (!isGeminiEnabled) {
-      return {
-        ok: false,
-        message: 'Gemini API is not configured.',
-      };
-    }
-
-    try {
-      const context = buildStudyContext(data);
-      const prompt = buildGeminiPrompt(context, question);
-      const response = await generateGeminiText(prompt);
-
-      return {
-        ok: true,
-        message: 'Gemini response ready.',
-        response,
-      };
-    } catch (error) {
-      return {
-        ok: false,
-        message: error instanceof Error ? error.message : 'Gemini request failed.',
-      };
-    }
-  };
-
-  const planTomorrowStudySchedule = async () => {
-    if (!isGeminiEnabled) {
-      return {
-        ok: false,
-        message: 'Gemini API is not configured.',
-      };
-    }
-
-    const context = buildStudyContext(data);
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowKey = toDateKey(tomorrow);
-
-    try {
-      const prompt = buildGeminiPlanPrompt(context, tomorrowKey);
-      const responseText = await generateGeminiText(prompt);
-      const plan = parseGeminiStudyPlan(responseText, context, tomorrowKey);
-      const storedSession = getStoredGoogleSession();
-
-      if (storedSession?.accessToken) {
-        await syncTomorrowPlanToCalendarWithToken(storedSession.accessToken, plan);
-      }
-
-      return {
-        ok: true,
-        message: storedSession?.accessToken
-          ? `Planned ${plan.schedule.length} sessions and synced them to Google Calendar.`
-          : `Planned ${plan.schedule.length} sessions. Sign in with Google to sync them to Calendar.`,
-        plan,
-      };
-    } catch (error) {
-      const fallbackPlan = createFallbackTomorrowPlan(context, tomorrowKey);
-      const storedSession = getStoredGoogleSession();
-
-      if (storedSession?.accessToken) {
-        try {
-          await syncTomorrowPlanToCalendarWithToken(storedSession.accessToken, fallbackPlan);
-        } catch (calendarError) {
-          console.error('Google Calendar fallback sync error:', calendarError);
-        }
-      }
-
-      return {
-        ok: true,
-        message: error instanceof Error
-          ? `Gemini was unavailable, so StudyNX created a fallback plan: ${error.message}`
-          : 'Gemini was unavailable, so StudyNX created a fallback plan.',
-        plan: fallbackPlan,
-      };
-    }
-  };
-
-  const fetchUpcomingCalendarEvents = async () => {
-    const storedSession = getStoredGoogleSession();
-    if (!storedSession?.accessToken) {
-      return {
-        ok: true,
-        message: 'Google Calendar is not connected yet.',
-        events: [],
-      };
-    }
-
-    try {
-      const events = await fetchUpcomingTracklioEventsWithToken(storedSession.accessToken);
-      return {
-        ok: true,
-        message: 'Upcoming study events loaded.',
-        events,
-      };
-    } catch (error) {
-      return {
-        ok: false,
-        message: error instanceof Error ? error.message : 'Could not load Google Calendar events.',
-        events: [],
-      };
-    }
+    return {
+      ok: true,
+      message: session.hours <= 0 ? 'Study session cleared.' : 'Study session logged.',
+    };
   };
 
   return (
@@ -851,7 +475,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         data,
         authMode,
         isGoogleDirectEnabled,
-        isGeminiEnabled,
         isAuthLoading,
         authPromptMessage,
         requestAuthPrompt,
@@ -865,9 +488,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         logout,
         updateData,
         logStudySession,
-        askGeminiAssistant,
-        planTomorrowStudySchedule,
-        fetchUpcomingCalendarEvents,
       }}
     >
       {children}
@@ -877,6 +497,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 export const useData = () => {
   const context = useContext(DataContext);
-  if (!context) throw new Error("useData must be used within DataProvider");
+  if (!context) throw new Error('useData must be used within DataProvider');
   return context;
 };
+
+// Re-export toDateKey so components can import it from here if needed
+export { toDateKey };

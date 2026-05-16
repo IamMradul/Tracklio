@@ -1,0 +1,57 @@
+.streak-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--bg-nav);
+  border: 1px solid var(--border-color);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  position: relative;
+  flex-shrink: 0;
+  cursor: default;
+  transition: all 0.25s ease;
+}
+
+.streak-badge.streak-active {
+  border-color: rgba(255, 160, 50, 0.4);
+  background: rgba(255, 160, 50, 0.08);
+  color: #ffb347;
+}
+
+.streak-badge.streak-broken {
+  border-color: rgba(255, 95, 116, 0.35);
+  background: rgba(255, 95, 116, 0.07);
+  color: var(--accent-red);
+  animation: streak-pulse 1.2s ease-in-out 2;
+}
+
+@keyframes streak-pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.04); }
+}
+
+.streak-flame {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.streak-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.streak-warn {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--accent-red);
+  margin-left: 2px;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .streak-warn {
+    display: none;
+  }
+}

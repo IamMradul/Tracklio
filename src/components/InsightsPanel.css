@@ -10,15 +10,14 @@
   align-items: center;
 }
 
-.insights-heading h2 {
-  font-size: 1.22rem;
-}
+.insights-heading h2 { font-size: 1.22rem; }
 
 .insights-heading span {
-  color: #8fa3d8;
+  color: var(--text-muted);
   font-size: 0.78rem;
 }
 
+/* ─── Metrics grid ─────────────────────────────────────────────── */
 .insight-metrics-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -26,25 +25,34 @@
 }
 
 .insight-metric-card {
-  border: 1px solid rgba(124, 149, 229, 0.24);
-  background: rgba(11, 25, 58, 0.75);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card-solid);
   border-radius: 12px;
   padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.insight-metric-card:hover {
+  border-color: var(--border-soft);
+  transform: translateY(-1px);
 }
 
 .insight-metric-card small {
-  color: #8ea2d6;
+  color: var(--text-muted);
   font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .insight-metric-card strong {
-  color: #ecf3ff;
+  color: var(--text-heading);
   font-size: 1rem;
 }
 
+/* ─── Split grid ───────────────────────────────────────────────── */
 .insights-split-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -52,47 +60,48 @@
 }
 
 .insight-card-block {
-  border: 1px solid rgba(124, 149, 229, 0.24);
-  background: rgba(11, 25, 58, 0.72);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card-solid);
   border-radius: 12px;
   padding: 14px;
   min-width: 0;
 }
 
 .insight-block-title {
-  color: #cfe0ff;
+  color: var(--text-label);
   margin-bottom: 12px;
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  font-weight: 600;
 }
 
+/* ─── Level analysis ───────────────────────────────────────────── */
 .level-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #a6bae7;
+  color: var(--text-muted);
   margin-bottom: 8px;
 }
 
-.level-row strong {
-  color: #ecf3ff;
-}
+.level-row strong { color: var(--text-heading); }
 
 .level-progress-track {
   height: 9px;
   border-radius: 999px;
-  background: #2a3b66;
+  background: var(--bg-input);
   overflow: hidden;
 }
 
 .level-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #35d6b5, #5f8dff);
+  background: linear-gradient(90deg, var(--accent-teal), var(--accent-blue));
+  transition: width 0.5s ease;
 }
 
 .level-progress-label {
-  color: #8ea2d6;
+  color: var(--text-muted);
   font-size: 0.72rem;
   margin-top: 8px;
 }
@@ -105,22 +114,23 @@
 }
 
 .level-bands-grid div {
-  border: 1px solid rgba(118, 142, 223, 0.2);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 8px;
 }
 
 .level-bands-grid small {
   display: block;
-  color: #8ea2d6;
+  color: var(--text-muted);
   font-size: 0.65rem;
 }
 
 .level-bands-grid strong {
-  color: #e8f2ff;
+  color: var(--text-heading);
   font-size: 0.85rem;
 }
 
+/* ─── Trend bars ───────────────────────────────────────────────── */
 .trend-bars {
   display: flex;
   align-items: flex-end;
@@ -140,14 +150,13 @@
   width: 100%;
   min-height: 8px;
   border-radius: 8px 8px 4px 4px;
-  background: linear-gradient(180deg, #6f93ff, #496ddd);
+  background: linear-gradient(180deg, var(--accent-blue), rgba(95,141,255,0.5));
+  transition: height 0.4s ease;
 }
 
-.trend-bar-col small {
-  color: #8ea2d6;
-  font-size: 0.64rem;
-}
+.trend-bar-col small { color: var(--text-muted); font-size: 0.64rem; }
 
+/* ─── Subject list ─────────────────────────────────────────────── */
 .subject-insight-list {
   display: flex;
   flex-direction: column;
@@ -155,10 +164,13 @@
 }
 
 .subject-insight-item {
-  border: 1px solid rgba(118, 142, 223, 0.2);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 9px;
+  transition: border-color 0.2s ease;
 }
+
+.subject-insight-item:hover { border-color: var(--border-soft); }
 
 .subject-insight-head {
   display: flex;
@@ -168,29 +180,28 @@
 }
 
 .subject-insight-head strong {
-  color: #e8f2ff;
+  color: var(--text-heading);
   overflow-wrap: anywhere;
 }
 
 .subject-insight-head span {
-  color: #8ea2d6;
+  color: var(--text-muted);
   font-size: 0.7rem;
 }
 
 .subject-track {
   height: 8px;
   border-radius: 999px;
-  background: #2b3d67;
+  background: var(--bg-input);
   overflow: hidden;
 }
 
-.subject-fill {
-  height: 100%;
-}
+.subject-fill { height: 100%; transition: width 0.5s ease; }
 
+/* ─── Best day ─────────────────────────────────────────────────── */
 .best-day-card {
-  border: 1px solid rgba(118, 142, 223, 0.22);
-  background: rgba(10, 24, 58, 0.7);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card-solid);
   border-radius: 12px;
   padding: 12px;
   display: flex;
@@ -199,29 +210,23 @@
 }
 
 .best-day-card strong {
-  color: #ecf4ff;
+  color: var(--text-heading);
   font-size: 1.2rem;
 }
 
 .best-day-card small,
 .insight-empty {
-  color: #8ea2d6;
+  color: var(--text-muted);
   font-size: 0.74rem;
 }
 
+/* ─── Responsive ───────────────────────────────────────────────── */
 @media (max-width: 980px) {
-  .insight-metrics-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .insights-split-grid {
-    grid-template-columns: 1fr;
-  }
+  .insight-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .insights-split-grid  { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 620px) {
   .insight-metrics-grid,
-  .level-bands-grid {
-    grid-template-columns: 1fr;
-  }
+  .level-bands-grid { grid-template-columns: 1fr; }
 }

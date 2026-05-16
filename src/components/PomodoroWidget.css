@@ -1,0 +1,101 @@
+.pomodoro-card {
+  align-items: center;
+  gap: 0;
+}
+
+/* Mode selector tabs */
+.pomodoro-modes {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-input);
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.pomodoro-mode-btn {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.pomodoro-mode-btn.active {
+  background: var(--bg-card-solid);
+  color: var(--text-heading);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.pomodoro-mode-btn:hover:not(.active) {
+  color: var(--text-main);
+}
+
+/* Circular ring */
+.pomodoro-ring-wrap {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.pomodoro-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.pomodoro-time-wrap {
+  position: relative;
+  text-align: center;
+  z-index: 1;
+}
+
+.pomodoro-time {
+  font-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.pomodoro-mode-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 4px;
+}
+
+/* Primary start/pause button */
+.pomodoro-primary-btn {
+  min-width: 90px;
+  font-weight: 600;
+  font-size: 0.78rem;
+  padding: 9px 18px;
+}
+
+.timer-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+/* Sessions count */
+.pomodoro-sessions-count {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+  text-align: center;
+}

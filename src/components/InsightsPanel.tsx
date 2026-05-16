@@ -106,6 +106,26 @@ const InsightsPanel: React.FC = () => {
 
   const maxWeeklyHours = Math.max(1, ...weeklyTrends.map(item => item.hours));
 
+  if (sortedEntries.length === 0) {
+    return (
+      <section className="insights-panel card">
+        <div className="insights-heading">
+          <h2>Study Insights</h2>
+          <span>{now.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+        </div>
+        <div className="empty-state" style={{ minHeight: 240 }}>
+          <svg width="72" height="72" viewBox="0 0 72 72" fill="none" aria-hidden="true">
+            <circle cx="36" cy="36" r="34" stroke="currentColor" strokeWidth="2" opacity=".3"/>
+            <path d="M24 48 Q36 24 48 48" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none" opacity=".6"/>
+            <circle cx="36" cy="28" r="5" fill="currentColor" opacity=".4"/>
+            <path d="M20 56h32" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity=".3"/>
+          </svg>
+          <p>No study sessions logged yet. Start studying to see your insights here!</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="insights-panel card">
       <div className="insights-heading">

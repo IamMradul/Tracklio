@@ -1,132 +1,131 @@
-export interface GoogleUserProfile {
+/**
+ * googleAuth.ts — Google Identity Services (GSI) popup sign-in.
+ * Requests profile and email scopes only (no Calendar).
+ * Returns user profile info and access token for API calls.
+ */
+
+export interface GoogleProfile {
   email: string;
-  name?: string;
-  picture?: string;
+  name: string;
+  picture: string;
+  accessToken: string;
+  expiresAt: number; // ms timestamp
+  scope: string;
 }
 
-export interface GoogleTokenResult {
-  accessToken: string;
-  expiresAt: number;
-  scope: string;
+/** Dynamically loads the Google Identity Services script if not already present. */
+const loadGsiScript = (): Promise<void> =>
+  new Promise((resolve, reject) => {
+    if (typeof window.google !== 'undefined') {
+      resolve();
+      return;
+    }
+
+    const existing = document.getElementById('gsi-script');
+    if (existing) {
+      existing.addEventListener('load', () => resolve());
+      existing.addEventListener('error', () => reject(new Error('Failed to load Google Identity Services script.')));
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'gsi-script';
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Google Identity Services script.'));
+    document.head.appendChild(script);
+  });
+
+/**
+ * Initiates a Google OAuth popup to sign in and obtain a user profile + access token.
+ * Only requests profile and email scopes (no Calendar access).
+ *
+ * @param clientId - The Google OAuth 2.0 client ID from VITE_GOOGLE_CLIENT_ID
+ * @returns Resolved GoogleProfile on success
+ * @throws Error if the user cancels or the sign-in fails
+ */
+export const signInWithGoogleDirect = (clientId: string): Promise<GoogleProfile> =>
+  new Promise(async (resolve, reject) => {
+    try {
+      await loadGsiScript();
+    } catch (err) {
+      reject(err);
+      return;
+    }
+
+    const SCOPES = [
+      'openid',
+      'https://www.googleapis.com/auth/userinfo.email',
+      'https://www.googleapis.com/auth/userinfo.profile',
+    ].join(' ');
+
+    window.google.accounts.oauth2
+      .initTokenClient({
+        client_id: clientId,
+        scope: SCOPES,
+        callback: async (tokenResponse: GoogleTokenResponse) => {
+          if (tokenResponse.error) {
+            reject(new Error(tokenResponse.error_description ?? tokenResponse.error));
+            return;
+          }
+
+          try {
+            const profileRes = await fetch(
+              'https://www.googleapis.com/oauth2/v3/userinfo',
+              { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
+            );
+
+            if (!profileRes.ok) {
+              throw new Error(`Profile fetch failed: ${profileRes.status}`);
+            }
+
+            const profile = await profileRes.json() as {
+              email?: string;
+              name?: string;
+              picture?: string;
+            };
+
+            resolve({
+              email: profile.email ?? '',
+              name: profile.name ?? '',
+              picture: profile.picture ?? '',
+              accessToken: tokenResponse.access_token,
+              expiresAt: Date.now() + (tokenResponse.expires_in ?? 3600) * 1000,
+              scope: tokenResponse.scope ?? SCOPES,
+            });
+          } catch (err) {
+            reject(err instanceof Error ? err : new Error('Failed to fetch Google profile.'));
+          }
+        },
+      })
+      .requestAccessToken();
+  });
+
+// ── Type augmentation for the GSI global ──────────────────────────
+
+interface GoogleTokenResponse {
+  access_token: string;
+  expires_in?: number;
+  scope?: string;
+  token_type?: string;
+  error?: string;
+  error_description?: string;
 }
 
 declare global {
   interface Window {
-    google?: {
-      accounts?: {
-        oauth2?: {
-          initTokenClient: (config: {
+    google: {
+      accounts: {
+        oauth2: {
+          initTokenClient(config: {
             client_id: string;
             scope: string;
-              callback: (response: { access_token?: string; expires_in?: number; scope?: string; error?: string }) => void;
-            error_callback?: (error: { type?: string }) => void;
-          }) => {
-            requestAccessToken: (options?: { prompt?: string }) => void;
-          };
+            callback: (response: GoogleTokenResponse) => void;
+          }): { requestAccessToken(): void };
         };
       };
     };
   }
 }
-
-const GOOGLE_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
-const GOOGLE_SIGNIN_SCOPE = [
-  'openid',
-  'email',
-  'profile',
-  'https://www.googleapis.com/auth/calendar.events',
-  'https://www.googleapis.com/auth/calendar.readonly',
-].join(' ');
-
-const loadGoogleScript = async (): Promise<void> => {
-  if (window.google?.accounts?.oauth2) {
-    return;
-  }
-
-  await new Promise<void>((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>(`script[src="${GOOGLE_SCRIPT_URL}"]`);
-    if (existing) {
-      existing.addEventListener('load', () => resolve(), { once: true });
-      existing.addEventListener('error', () => reject(new Error('Failed to load Google script.')), { once: true });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = GOOGLE_SCRIPT_URL;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Google script.'));
-    document.head.appendChild(script);
-  });
-};
-
-export const requestGoogleAccessToken = async (clientId: string, scope: string): Promise<GoogleTokenResult> => {
-  if (!clientId) {
-    throw new Error('Google Client ID is not configured.');
-  }
-
-  await loadGoogleScript();
-
-  const token = await new Promise<GoogleTokenResult>((resolve, reject) => {
-    const tokenClient = window.google?.accounts?.oauth2?.initTokenClient({
-      client_id: clientId,
-      scope,
-      callback: (response) => {
-        if (!response.access_token) {
-          reject(new Error(response.error || 'Failed to get Google access token.'));
-          return;
-        }
-
-        resolve({
-          accessToken: response.access_token,
-          expiresAt: Date.now() + ((response.expires_in ?? 3600) * 1000),
-          scope: response.scope || scope,
-        });
-      },
-      error_callback: () => {
-        reject(new Error('Google sign-in was cancelled or failed.'));
-      },
-    });
-
-    if (!tokenClient) {
-      reject(new Error('Google OAuth client could not be initialized.'));
-      return;
-    }
-
-    tokenClient.requestAccessToken({ prompt: 'consent' });
-  });
-
-  return token;
-};
-
-export const signInWithGoogleDirect = async (clientId: string): Promise<GoogleUserProfile & GoogleTokenResult> => {
-  if (!clientId) {
-    throw new Error('Google Client ID is not configured.');
-  }
-
-  const token = await requestGoogleAccessToken(clientId, GOOGLE_SIGNIN_SCOPE);
-
-  const profileResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-    headers: {
-      Authorization: `Bearer ${token.accessToken}`,
-    },
-  });
-
-  if (!profileResponse.ok) {
-    throw new Error('Could not fetch Google user profile.');
-  }
-
-  const profile = (await profileResponse.json()) as GoogleUserProfile;
-
-  if (!profile.email) {
-    throw new Error('Google account email is not available.');
-  }
-
-  return {
-    ...profile,
-    accessToken: token.accessToken,
-    expiresAt: token.expiresAt,
-    scope: token.scope,
-  };
-};
